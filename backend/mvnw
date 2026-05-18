@@ -1,0 +1,17 @@
+#!/bin/sh
+DIR="$(cd "$(dirname "$0")" && pwd)"
+WRAPPER_JAR="$DIR/.mvn/wrapper/maven-wrapper.jar"
+WRAPPER_PROPERTIES="$DIR/.mvn/wrapper/maven-wrapper.properties"
+
+if [ ! -f "$WRAPPER_JAR" ]; then
+  echo "Missing Maven wrapper jar: $WRAPPER_JAR" >&2
+  exit 1
+fi
+
+if [ ! -f "$WRAPPER_PROPERTIES" ]; then
+  echo "Missing Maven wrapper properties: $WRAPPER_PROPERTIES" >&2
+  exit 1
+fi
+
+cd "$DIR" || exit 1
+exec java -Dmaven.multiModuleProjectDirectory="$DIR" -cp "$WRAPPER_JAR" org.apache.maven.wrapper.MavenWrapperMain "$@"

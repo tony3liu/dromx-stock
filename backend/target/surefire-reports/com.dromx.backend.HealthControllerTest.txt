@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.dromx.backend.HealthControllerTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.894 s -- in com.dromx.backend.HealthControllerTest
