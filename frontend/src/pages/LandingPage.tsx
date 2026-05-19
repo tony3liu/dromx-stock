@@ -1,41 +1,18 @@
 import { ArrowRight, Play, ShieldCheck, Sparkles } from "lucide-react";
+import type React from "react";
 import type { AppContent, Locale } from "../i18n/content";
-import LogoMark from "../components/LogoMark";
 
 type LandingPageProps = {
   locale: Locale;
+  nav: React.ReactNode;
   onOpenConsole: () => void;
-  onToggleLocale: () => void;
   t: AppContent;
 };
 
-function LandingPage({ locale, onOpenConsole, onToggleLocale, t }: LandingPageProps) {
+function LandingPage({ locale, nav, onOpenConsole, t }: LandingPageProps) {
   return (
     <main className="site-shell" lang={locale}>
-      <header className="topbar">
-        <a className="brand" href="/" aria-label={`${t.brand} home`}>
-          <span className="brand-mark">
-            <LogoMark size={18} />
-          </span>
-          <span>{t.brand}</span>
-        </a>
-        <nav className="nav-links" aria-label="Primary navigation">
-          <a href="#platform">{t.nav.platform}</a>
-          <a
-            href="#console"
-            onClick={(event) => {
-              event.preventDefault();
-              onOpenConsole();
-            }}
-          >
-            {t.nav.console}
-          </a>
-          <a href="#trust">{t.nav.trust}</a>
-        </nav>
-        <button className="lang-switch" type="button" onClick={onToggleLocale}>
-          {t.switchTo}
-        </button>
-      </header>
+      {nav}
 
       <section className="hero-section">
         <div className="hero-copy">

@@ -2,15 +2,16 @@ import type { AppContent, Locale } from "../../i18n/content";
 
 type AgentRegistryProps = {
   locale: Locale;
+  onOpenAgentBuilder: (index: number) => void;
   onSelectAgent: (index: number) => void;
   roleAgentsTitle: string;
-  roles: AppContent["console"]["roles"];
+  roles: Array<AppContent["console"]["roles"][number] & { originalIndex?: number }>;
   selectedAgentIndex: number;
 };
 
-function AgentRegistry({ locale, onSelectAgent, roleAgentsTitle, roles, selectedAgentIndex }: AgentRegistryProps) {
+function AgentRegistry({ locale, onOpenAgentBuilder, onSelectAgent, roleAgentsTitle, roles, selectedAgentIndex }: AgentRegistryProps) {
   return (
-    <section className="console-section">
+    <section className="console-section" aria-label={roleAgentsTitle}>
       <div className="section-header">
         <div>
           <span className="section-label">{locale === "en" ? "Agent Registry" : "Agent 注册表"}</span>
@@ -19,7 +20,20 @@ function AgentRegistry({ locale, onSelectAgent, roleAgentsTitle, roles, selected
       </div>
       <div className="agent-registry">
         {roles.map((agent, index) => (
-          <article className={`role-card agent-card ${index === selectedAgentIndex ? "is-selected" : ""}`} key={agent.name}>
+          <article
+            className={`role-card agent-card ${(agent.originalIndex ?? index) === selectedAgentIndex ? "is-selected" : ""}`}
+            key={agent.name}
+            role="button"
+            tabIndex={0}
+            aria-label={agent.name}
+            onClick={() => onSelectAgent(agent.originalIndex ?? index)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectAgent(agent.originalIndex ?? index);
+              }
+            }}
+          >
             <div className="role-top">
               <div>
                 <h2>{agent.name}</h2>
@@ -41,27 +55,38 @@ function AgentRegistry({ locale, onSelectAgent, roleAgentsTitle, roles, selected
             </div>
             <div className="agent-actions">
               <button
-                className="console-action is-primary"
+                className="console-action is-primary agent-action-main"
                 type="button"
                 aria-label={`Edit ${agent.name}`}
-                onClick={() => onSelectAgent(index)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenAgentBuilder(agent.originalIndex ?? index);
+                }}
               >
                 {locale === "en" ? "Edit" : "编辑"}
               </button>
               <button
-                className="console-action"
+                className="console-action agent-action-secondary"
                 type="button"
                 aria-label={`Debug ${agent.name}`}
-                onClick={() => onSelectAgent(index)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenAgentBuilder(agent.originalIndex ?? index);
+                }}
               >
                 {locale === "en" ? "Debug" : "调试"}
               </button>
-              <button className="console-action" type="button" aria-label={`Publish ${agent.name}`}>
-                {locale === "en" ? "Publish" : "发布"}
-              </button>
-              <button className="console-action" type="button" aria-label={`Unpublish ${agent.name}`}>
-                {locale === "en" ? "Unpublish" : "下架"}
-              </button>
+              <div className="agent-actions-tertiary">
+                <button className="console-action agent-action-tertiary" type="button" aria-label={`Publish ${agent.name}`} onClick={(event) => event.stopPropagation()}>
+                  {locale === "en" ? "Publish" : "发布"}
+                </button>
+                <button className="console-action agent-action-tertiary" type="button" aria-label={`Unpublish ${agent.name}`} onClick={(event) => event.stopPropagation()}>
+                  {locale === "en" ? "Unpublish" : "下架"}
+                </button>
+                <button className="console-action agent-action-tertiary" type="button" aria-label={`Copy ${agent.name}`} onClick={(event) => event.stopPropagation()}>
+                  {locale === "en" ? "Copy" : "复制"}
+                </button>
+              </div>
             </div>
           </article>
         ))}
