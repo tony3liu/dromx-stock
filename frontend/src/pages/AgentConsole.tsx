@@ -18,7 +18,7 @@ type AgentConsoleProps = {
   selectedAgentIndex: number;
   searchTerm: string;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
-  roles: AppContent["console"]["roles"];
+  roles: Array<AppContent["console"]["roles"][number] & { originalIndex?: number }>;
   workflows: WorkflowData[];
   storeAgents: StoreAgent[];
   store: AppContent["console"]["store"];

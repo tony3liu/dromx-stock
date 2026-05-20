@@ -115,7 +115,7 @@ function App() {
   }, [activeFilters, searchTerm, t.console.roles]);
 
   const handleToggleFilter = (status: AgentStatus) => {
-    setActiveFilters((prev) => {
+    setActiveFilters((prev: Set<AgentStatus>) => {
       const next = new Set(prev);
       if (next.has(status)) {
         next.delete(status);
