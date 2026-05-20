@@ -6,7 +6,7 @@ import AgentBuilderPage from "./pages/AgentBuilderPage";
 import AgentConsole from "./pages/AgentConsole";
 import LandingPage from "./pages/LandingPage";
 import SkillBuilderPage from "./pages/SkillBuilderPage";
-import SkillsStorePage from "./pages/SkillsStorePage";
+import SkillsCenterPage from "./pages/SkillsCenterPage";
 import WorkflowEditorPage from "./pages/WorkflowEditorPage";
 import RoleAgentsStore from "./pages/RoleAgentsStore";
 import { content, type Locale } from "./i18n/content";
@@ -24,7 +24,7 @@ type RouteState =
   | { path: "/workflows/:index/edit"; index: number };
 
 type AgentStatus = "active" | "review" | "queued";
-type ConsoleSection = "agents" | "skills" | "workflows" | "gpu" | "swarm";
+type ConsoleSection = "agents" | "skills" | "workflows" | "computeCenter" | "swarm";
 
 function parseRoute(pathname: string): RouteState {
   if (pathname === "/console") return { path: "/console" };
@@ -282,17 +282,12 @@ function App() {
 
   if (route.path === "/skills") {
     return (
-      <SkillsStorePage
+      <SkillsCenterPage
         locale={locale}
         nav={header}
         skills={skills}
         selectedSkillId={selectedSkillId}
         onSelectSkill={setSelectedSkillId}
-        onToggleLocale={() => setLocale(locale === "en" ? "zh" : "en")}
-        onCreateSkill={handleCreateSkill}
-        onSaveSkillDraft={handleSaveSkillDraft}
-        onSubmitSkillReview={handleSubmitSkillReview}
-        onPublishSkill={handlePublishSkill}
         t={t}
       />
     );

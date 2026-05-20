@@ -41,16 +41,17 @@ describe("landing page", () => {
     await clickPrimaryNav(user, /Skills/i);
 
     expect(window.location.pathname).toBe("/skills");
-    expect(screen.getByRole("heading", { name: /Skills Store/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Create Skill/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Skills Center/i })).toBeInTheDocument();
   });
 
-  it("opens the skill builder at its own url", async () => {
+  it("opens the skill builder from the console skills workbench", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
     render(<App />);
 
-    await clickPrimaryNav(user, /Skills/i);
+    await user.click(screen.getByRole("link", { name: /Start a Workflow/i }));
+    const sidebar = screen.getByRole("complementary", { name: /Console navigation/i });
+    await user.click(within(sidebar).getByRole("button", { name: /Skills Workbench/i }));
     await user.click(screen.getByRole("button", { name: /Create Skill/i }));
 
     expect(window.location.pathname).toBe("/skills/new");
@@ -65,13 +66,10 @@ describe("landing page", () => {
 
     await clickPrimaryNav(user, /Skills/i);
 
-    expect(screen.getByRole("button", { name: /Store/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /My Skills/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^All$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Installed$/i })).toBeInTheDocument();
     const detailPanel = screen.getByRole("complementary", { name: /Skill details/i });
     expect(within(detailPanel).getByText(/Skill Detail/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Private Workspace/i })).toBeInTheDocument();
   });
 
   it("renders only published public skills in the store view", async () => {
@@ -85,24 +83,24 @@ describe("landing page", () => {
     expect(screen.queryByRole("button", { name: /Launch Brief Builder/i })).not.toBeInTheDocument();
   });
 
-  it("moves a skill draft through review and publish", async () => {
+  it("moves a skill draft through review and publish in the workbench", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
     render(<App />);
 
-    await clickPrimaryNav(user, /Skills/i);
+    await user.click(screen.getByRole("link", { name: /Start a Workflow/i }));
+    const sidebar = screen.getByRole("complementary", { name: /Console navigation/i });
+    await user.click(within(sidebar).getByRole("button", { name: /Skills Workbench/i }));
     await user.click(screen.getByRole("button", { name: /Create Skill/i }));
     await user.click(screen.getByRole("button", { name: /Submit for Review/i }));
 
-    await clickPrimaryNav(user, /Skills/i);
-    await user.click(screen.getByRole("button", { name: /My Skills/i }));
-    expect(screen.getByText(/Untitled Skill · review/i)).toBeInTheDocument();
+    // Skill should now be in review status within the workbench
+    expect(screen.getByText(/review/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Publish Skill/i }));
 
-    await user.click(screen.getByRole("button", { name: /Store/i }));
-    await user.click(screen.getByRole("button", { name: /My Skills/i }));
-    expect(screen.getByText(/Untitled Skill · published/i)).toBeInTheDocument();
+    // Skill should now be published
+    expect(screen.getByText(/published/i)).toBeInTheDocument();
   });
 
   it("localizes the skills store labels and catalog content", async () => {
@@ -113,7 +111,7 @@ describe("landing page", () => {
     await clickPrimaryNav(user, /Skills/i);
     await user.click(screen.getByRole("button", { name: /中文/i }));
 
-    expect(screen.getByRole("heading", { name: /技能商店/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /技能中心/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /线索映射器/i })).toBeInTheDocument();
     expect(screen.getByText(/1,832 次安装/i)).toBeInTheDocument();
     expect(screen.getAllByText(/已发布/i).length).toBeGreaterThan(0);

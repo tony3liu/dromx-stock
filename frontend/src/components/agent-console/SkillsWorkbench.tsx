@@ -69,38 +69,29 @@ function SkillsWorkbench({
 
   return (
     <div className="console-main workbench-shell" lang={locale}>
-      <div className="skills-header" style={{ marginBottom: "20px" }}>
-        <span className="section-label">
-          {locale === "en" ? "Console Operations" : "系统运营管理"}
-        </span>
-        <h1 style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>{locale === "en" ? "Skills Workbench" : "技能工作台"}</span>
-          <button className="console-action is-primary" type="button" onClick={onCreateSkill} style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <Plus size={15} />
-            {sx.actions.create}
-          </button>
-        </h1>
+      <div className="console-summary">
+        <span className="section-label">{sx.eyebrow}</span>
+        <h1>{locale === "en" ? "Skills Workbench" : "技能工作台"}</h1>
         <p>
           {locale === "en"
             ? "Create, edit, review, and publish custom skills for your Swarm. Private drafts are locked to your workspace."
             : "新建、编辑、审核并发布您自定义的智能体技能。私有草稿技能在发布前仅存在于您的工作区中。"}
         </p>
+        <div className="summary-metrics">
+          <span>{locale === "en" ? `${mySkills.length} Total Capabilities` : `共 ${mySkills.length} 项自定义技能`}</span>
+          <span><Sparkles size={12} /> {draftCount} {sx.statuses.draft}</span>
+          <span><WandSparkles size={12} /> {reviewCount} {sx.statuses.review}</span>
+          <span><CheckCircle2 size={12} /> {publishedCount} {sx.statuses.published}</span>
+        </div>
+        <div className="action-row">
+          <button className="console-action is-primary" type="button" onClick={onCreateSkill}>
+            <Plus size={14} />
+            {sx.actions.create}
+          </button>
+        </div>
       </div>
 
-      <div className="skills-summary skills-summary-strip" style={{ marginBottom: "24px" }}>
-        <span>{locale === "en" ? `${mySkills.length} Total Capabilities` : `共 ${mySkills.length} 项自定义技能`}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <Sparkles size={12} /> {draftCount} {sx.statuses.draft}
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <WandSparkles size={12} /> {reviewCount} {sx.statuses.review}
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <CheckCircle2 size={12} /> {publishedCount} {sx.statuses.published}
-        </span>
-      </div>
-
-      <div className="skills-toolbar" style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+      <div className="skills-toolbar" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         <div className="store-search-wrap" style={{ flex: 1, position: "relative" }}>
           <input
             className="store-search-input"

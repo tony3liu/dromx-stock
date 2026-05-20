@@ -1,36 +1,26 @@
 import { useMemo, useState } from "react";
-import { Star, Plus } from "lucide-react";
+import { Star } from "lucide-react";
 import type React from "react";
 import type { AppContent, Locale } from "../i18n/content";
 import { localizeSkill, type SkillItem } from "../data/skills";
 
-type SkillsStorePageProps = {
+type SkillsCenterPageProps = {
   locale: Locale;
   nav: React.ReactNode;
   skills: SkillItem[];
   selectedSkillId: string;
   onSelectSkill: (id: string) => void;
-  onToggleLocale: () => void;
-  onCreateSkill: () => void;
-  onSaveSkillDraft?: () => void;
-  onSubmitSkillReview?: () => void;
-  onPublishSkill?: () => void;
   t: AppContent;
 };
 
-function SkillsStorePage({
+function SkillsCenterPage({
   locale,
   nav,
   skills,
   selectedSkillId,
   onSelectSkill,
-  onCreateSkill,
-  onSaveSkillDraft,
-  onSubmitSkillReview,
-  onPublishSkill,
   t
-}: SkillsStorePageProps) {
-  const [view, setView] = useState<"store" | "my-skills">("store");
+}: SkillsCenterPageProps) {
   const [filter, setFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const sx = t.skills;
@@ -40,30 +30,16 @@ function SkillsStorePage({
     [skills, sx.catalog]
   );
 
-  const storeSkills = useMemo(
+  const publishedSkills = useMemo(
     () => localizedSkills.filter((skill) => skill.owner === "system" && skill.status === "published"),
     [localizedSkills]
   );
 
-  const mySkills = useMemo(
-    () => localizedSkills.filter((skill) => skill.owner === "me"),
-    [localizedSkills]
-  );
-
-  const isStore = view === "store";
-  const currentSkillsList = isStore ? storeSkills : mySkills;
-
   const visibleSkills = useMemo(() => {
-    return currentSkillsList.filter((skill) => {
-      if (isStore) {
-        if (filter === "free" && skill.pricing !== "free") return false;
-        if (filter === "paid" && skill.pricing !== "paid") return false;
-        if (filter === "installed" && !skill.installed) return false;
-      } else {
-        if (filter === "draft" && skill.status !== "draft") return false;
-        if (filter === "review" && skill.status !== "review") return false;
-        if (filter === "published" && skill.status !== "published") return false;
-      }
+    return publishedSkills.filter((skill) => {
+      if (filter === "free" && skill.pricing !== "free") return false;
+      if (filter === "paid" && skill.pricing !== "paid") return false;
+      if (filter === "installed" && !skill.installed) return false;
 
       if (!searchTerm.trim()) return true;
       const needle = searchTerm.toLowerCase();
@@ -77,72 +53,31 @@ function SkillsStorePage({
         ...skill.tools
       ].some((value) => value.toLowerCase().includes(needle));
     });
-  }, [filter, currentSkillsList, searchTerm, isStore]);
+  }, [filter, publishedSkills, searchTerm]);
 
-  const selectedSkill = localizedSkills.find((skill) => skill.id === selectedSkillId) ?? currentSkillsList[0];
+  const selectedSkill = localizedSkills.find((skill) => skill.id === selectedSkillId) ?? publishedSkills[0];
 
-  const installedCount = storeSkills.filter((skill) => skill.installed).length;
-  const freeCount = storeSkills.filter((skill) => skill.pricing === "free").length;
-  const paidCount = storeSkills.filter((skill) => skill.pricing === "paid").length;
-
-  const filterOptions = isStore
-    ? ["all", "free", "paid", "installed"]
-    : ["all", "draft", "review", "published"];
+  const freeCount = publishedSkills.filter((skill) => skill.pricing === "free").length;
+  const paidCount = publishedSkills.filter((skill) => skill.pricing === "paid").length;
+  const installedCount = publishedSkills.filter((skill) => skill.installed).length;
 
   return (
     <main className="console-shell skills-shell" lang={locale}>
       {nav}
       <section className="skills-workbench">
-        {/* Upper Header and Create Button */}
         <div className="skills-header" style={{ marginBottom: "20px" }}>
           <span className="section-label">{sx.eyebrow}</span>
-          <h1 style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>{sx.title}</span>
-            <button className="console-action is-primary" type="button" onClick={onCreateSkill} style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Plus size={15} />
-              {sx.actions.create}
-            </button>
-          </h1>
+          <h1>{sx.title}</h1>
           <p>{sx.description}</p>
         </div>
 
-        {/* Store / My Skills view tabs switcher */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-          <button
-            className={`console-action ${view === "store" ? "is-primary" : ""}`}
-            type="button"
-            onClick={() => {
-              setView("store");
-              setFilter("all");
-              const firstPub = storeSkills[0];
-              if (firstPub) onSelectSkill(firstPub.id);
-            }}
-          >
-            {sx.store}
-          </button>
-          <button
-            className={`console-action ${view === "my-skills" ? "is-primary" : ""}`}
-            type="button"
-            onClick={() => {
-              setView("my-skills");
-              setFilter("all");
-              const firstOwned = mySkills[0];
-              if (firstOwned) onSelectSkill(firstOwned.id);
-            }}
-          >
-            {sx.mySkills}
-          </button>
-        </div>
-
-        {/* Metrics Strip */}
         <div className="skills-summary skills-summary-strip">
-          <span>{sx.counts.skills(storeSkills.length)}</span>
+          <span>{sx.counts.skills(publishedSkills.length)}</span>
           <span>{sx.counts.free(freeCount)}</span>
           <span>{sx.counts.paid(paidCount)}</span>
           <span>{sx.counts.installed(installedCount)}</span>
         </div>
 
-        {/* Toolbar with Search and Filters */}
         <div className="skills-toolbar">
           <div className="store-search-wrap" style={{ flex: 1, marginRight: "16px" }}>
             <input
@@ -154,7 +89,7 @@ function SkillsStorePage({
             />
           </div>
           <div className="store-filter-tabs">
-            {filterOptions.map((item) => (
+            {["all", "free", "paid", "installed"].map((item) => (
               <button
                 key={item}
                 className={`store-filter-tab ${filter === item ? "is-active" : ""}`}
@@ -167,7 +102,6 @@ function SkillsStorePage({
           </div>
         </div>
 
-        {/* Main Catalog and Details Layout */}
         <div className="skills-layout">
           <section className="console-section" aria-label={sx.catalogLabel}>
             <div className="skills-grid">
@@ -204,26 +138,12 @@ function SkillsStorePage({
                       <span key={item}>{item}</span>
                     ))}
                   </div>
-                  {/* Status composite label – visible in My Skills view, used by tests */}
-                  {!isStore && (
-                    <span className="skill-composite-label" style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>{skill.name} · {skill.status}</span>
-                  )}
                 </article>
               ))}
             </div>
           </section>
 
           <aside className="skills-sidebar" aria-label={sx.detailsRegion}>
-            {/* Private Workspace description panel required by test */}
-            <div className="skills-rail-card" style={{ marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "4px" }}>
-                {sx.workspaceTitle}
-              </h2>
-              <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>
-                {sx.workspaceDescription}
-              </p>
-            </div>
-
             {selectedSkill ? (
               <div className="skills-rail-card skills-detail">
                 <div className="section-header">
@@ -239,7 +159,7 @@ function SkillsStorePage({
                 <div className="summary-metrics">
                   <span>{selectedSkill.version}</span>
                   <span>{selectedSkill.publisher}</span>
-                  <span>{selectedSkill.owner === "me" ? sx.privateSkill : sx.publicSkill}</span>
+                  <span>{sx.publicSkill}</span>
                 </div>
                 <div className="detail-stack">
                   <div className="detail-block">
@@ -275,36 +195,13 @@ function SkillsStorePage({
                   </div>
                 </div>
 
-                {/* Conditional rendering for store installs vs private draft/review publish actions */}
                 <div className="action-row" style={{ marginTop: "16px" }}>
-                  {selectedSkill.owner === "me" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                      {selectedSkill.status === "draft" && (
-                        <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-                          <button className="console-action" type="button" onClick={onSaveSkillDraft} style={{ flex: 1 }}>
-                            {sx.actions.saveDraft}
-                          </button>
-                          <button className="console-action is-primary" type="button" onClick={onSubmitSkillReview} style={{ flex: 1 }}>
-                            {sx.actions.submitForReview}
-                          </button>
-                        </div>
-                      )}
-                      {selectedSkill.status === "review" && (
-                        <button className="console-action is-primary" type="button" aria-label="Publish Skill" onClick={onPublishSkill} style={{ width: "100%" }}>
-                          {sx.actions.publish}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <button className="console-action is-primary" type="button">
-                        {selectedSkill.installed ? sx.actions.disable : sx.actions.install}
-                      </button>
-                      <button className="console-action" type="button">
-                        {sx.actions.enable}
-                      </button>
-                    </>
-                  )}
+                  <button className="console-action is-primary" type="button">
+                    {selectedSkill.installed ? sx.actions.disable : sx.actions.install}
+                  </button>
+                  <button className="console-action" type="button">
+                    {sx.actions.enable}
+                  </button>
                 </div>
               </div>
             ) : (
@@ -319,4 +216,4 @@ function SkillsStorePage({
   );
 }
 
-export default SkillsStorePage;
+export default SkillsCenterPage;

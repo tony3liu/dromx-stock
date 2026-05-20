@@ -46,7 +46,7 @@ export const content = {
     finalTitle: "See the network that runs the work.",
     finalCta: "Enter Console",
     console: {
-      nav: ["Agent Console", "Swarm", "Skills Workbench", "Workflows", "GPU"],
+      nav: ["Agent Console", "Swarm", "Skills Workbench", "Workflows", "Compute"],
       workspace: "Digital Labor Workspace",
       status: "Swarm running",
       activeSwarm: "Active Swarm",
@@ -305,27 +305,68 @@ export const content = {
           downloads: 5600
         }
       ],
-      gpu: {
-        title: "GPU Compute Node Cluster",
-        subtitle: "Monitor active hardware units, allocate VRAM, and track running model inferences.",
-        globalUtilization: "Global GPU Utilization",
-        vramAllocation: "VRAM Allocation",
-        powerConsumption: "Power Consumption",
-        temperature: "Cluster Temperature",
-        activeNodes: "Active Nodes",
-        runningModels: "Running Inference Services",
-        nodeHealth: "Node Health Status",
-        logs: "Real-time Telemetry Logs",
-        actions: {
-          reboot: "Reboot Node",
-          optimize: "Optimize VRAM",
-          telemetry: "Hardware Telemetry"
+      computeCenter: {
+        headerLabel: "Compute Center",
+        title: "Model Compute Infrastructure",
+        subtitle: "Configure your own model providers or browse DromX's built-in model catalog.",
+        providerCount: (n: number) => `${n} Provider${n !== 1 ? "s" : ""}`,
+        modelCount: (n: number) => `${n} Model${n !== 1 ? "s" : ""}`,
+        freeModelCount: (n: number) => `${n} Free`,
+        tabs: {
+          myProviders: "My Providers",
+          modelCatalog: "Model Catalog"
+        },
+        providers: {
+          title: "Custom Model Providers",
+          description: "Connect your own API-compatible model services by configuring provider endpoints and credentials.",
+          emptyState: "No providers configured yet. Add your first model provider below.",
+          addButton: "Add Provider",
+          form: {
+            name: "Provider Name",
+            namePlaceholder: "e.g. My OpenAI Endpoint",
+            baseUrl: "Base URL",
+            baseUrlPlaceholder: "https://api.openai.com/v1",
+            apiKey: "API Key",
+            apiKeyPlaceholder: "sk-...",
+            modelNames: "Model Names",
+            modelNamesPlaceholder: "e.g. gpt-4o, gpt-4o-mini",
+            modelNamesHint: "Comma-separated list of model identifiers",
+            save: "Save Provider",
+            update: "Update Provider",
+            cancel: "Cancel",
+            testConnection: "Test Connection",
+            delete: "Remove",
+            confirmDelete: "Remove this provider?"
+          },
+          status: {
+            connected: "Connected",
+            testing: "Testing...",
+            error: "Connection Error",
+            untested: "Untested"
+          }
+        },
+        catalog: {
+          title: "Built-in Model Catalog",
+          description: "Browse and deploy DromX's curated selection of models. Free models are available to everyone.",
+          filterAll: "All",
+          filterFree: "Free",
+          filterPaid: "Paid",
+          filterPurchased: "Purchased",
+          searchPlaceholder: "Search models...",
+          contextWindow: "Context Window",
+          speed: "Inference Speed",
+          useModel: "Use Model",
+          buyModel: "Buy",
+          free: "FREE",
+          purchased: "Purchased",
+          noResults: "No models match the current filter.",
+          lockedHint: "Purchase this model to deploy it."
         }
       }
     },
     skills: {
-      title: "Skills Store",
-      eyebrow: "Skills Store",
+      title: "Skills Center",
+      eyebrow: "Skills Center",
       description: "Browse public Skills, manage drafts, and publish your own capabilities.",
       counts: {
         skills: (n: number) => `${n} ${n === 1 ? "Skill" : "Skills"}`,
@@ -522,7 +563,7 @@ export const content = {
   },
   zh: {
     brand: "DromX",
-    nav: { agents: "角色 Agent", skills: "技能商店", console: "控制台" },
+    nav: { agents: "角色 Agent", skills: "技能中心", console: "控制台" },
     switchTo: "EN",
     heroEyebrow: "面向现实世界的数字劳动力网络",
     heroTitle: "让世界拥有无限生产力",
@@ -805,27 +846,68 @@ export const content = {
           downloads: 5600
         }
       ],
-      gpu: {
-        title: "GPU 算力集群监控",
-        subtitle: "实时监控计算节点、显存分配并调度在线模型推理服务。",
-        globalUtilization: "全局 GPU 利用率",
-        vramAllocation: "显存分配",
-        powerConsumption: "功耗消耗",
-        temperature: "集群温度",
-        activeNodes: "计算节点",
-        runningModels: "在线推理模型",
-        nodeHealth: "节点健康状态",
-        logs: "硬件实时遥测日志",
-        actions: {
-          reboot: "重启节点",
-          optimize: "显存优化",
-          telemetry: "硬件遥测"
+      computeCenter: {
+        headerLabel: "算力中心",
+        title: "模型算力基础设施",
+        subtitle: "配置你自己的模型供应商，或浏览 DromX 内置模型目录。",
+        providerCount: (n: number) => `${n} 个供应商`,
+        modelCount: (n: number) => `${n} 个模型`,
+        freeModelCount: (n: number) => `${n} 个免费`,
+        tabs: {
+          myProviders: "我的供应商",
+          modelCatalog: "模型商店"
+        },
+        providers: {
+          title: "自定义模型供应商",
+          description: "配置 API 兼容的模型服务端点与凭证，接入你自己的模型算力。",
+          emptyState: "尚未配置供应商，请在下方添加你的第一个模型供应商。",
+          addButton: "添加供应商",
+          form: {
+            name: "供应商名称",
+            namePlaceholder: "例如：我的 OpenAI 端点",
+            baseUrl: "Base URL",
+            baseUrlPlaceholder: "https://api.openai.com/v1",
+            apiKey: "API Key",
+            apiKeyPlaceholder: "sk-...",
+            modelNames: "模型列表",
+            modelNamesPlaceholder: "例如：gpt-4o, gpt-4o-mini",
+            modelNamesHint: "多个模型名以英文逗号分隔",
+            save: "保存供应商",
+            update: "更新供应商",
+            cancel: "取消",
+            testConnection: "测试连接",
+            delete: "删除",
+            confirmDelete: "确认删除此供应商？"
+          },
+          status: {
+            connected: "已连接",
+            testing: "测试中...",
+            error: "连接失败",
+            untested: "未测试"
+          }
+        },
+        catalog: {
+          title: "内置模型目录",
+          description: "浏览并使用 DromX 精选模型，免费模型人人可用。",
+          filterAll: "全部",
+          filterFree: "免费",
+          filterPaid: "付费",
+          filterPurchased: "已购买",
+          searchPlaceholder: "搜索模型...",
+          contextWindow: "上下文窗口",
+          speed: "推理速度",
+          useModel: "使用模型",
+          buyModel: "购买",
+          free: "免费",
+          purchased: "已购买",
+          noResults: "当前筛选条件下无匹配模型。",
+          lockedHint: "购买此模型即可部署使用。"
         }
       }
     },
     skills: {
-      title: "技能商店",
-      eyebrow: "技能商店",
+      title: "技能中心",
+      eyebrow: "技能中心",
       description: "浏览公共技能，管理草稿，并发布你自己的能力模块。",
       counts: {
         skills: (n: number) => `${n} 个技能`,
@@ -872,7 +954,7 @@ export const content = {
         submitReview: "提交审核",
         submitForReview: "提交审核",
         publish: "发布",
-        backToSkills: "返回技能商店"
+        backToSkills: "返回技能中心"
       },
       workspaceTitle: "私有工作区",
       workspaceDescription: "草稿技能在发布前仅自己可见。",

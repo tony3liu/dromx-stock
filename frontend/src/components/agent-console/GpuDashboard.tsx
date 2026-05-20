@@ -1,480 +1,453 @@
-import { useState, useEffect } from "react";
-import { Cpu, Server, HardDrive, Flame, Zap, RotateCw, Terminal, Check, Settings } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Star, Plus, Trash2, Wifi, Loader2, AlertCircle, CheckCircle2, Search, X } from "lucide-react";
 import type { AppContent, Locale } from "../../i18n/content";
+import { builtInModels, createProviderConfig, emptyProviderForm, type BuiltInModel, type ConnectionStatus, type ModelProviderConfig } from "../../data/models";
 
 type GpuDashboardProps = {
   locale: Locale;
   t: AppContent;
 };
 
-type NodeInfo = {
-  id: string;
-  name: string;
-  hardware: string;
-  vram: string;
-  load: number;
-  temp: number;
-  power: number;
-  status: "active" | "idle" | "optimizing";
-};
+function ComputeCenterDashboard({ locale, t }: GpuDashboardProps) {
+  const cx = t.console.computeCenter;
 
-type ModelService = {
-  id: string;
-  name: string;
-  node: string;
-  vram: string;
-  qps: number;
-  latency: string;
-  status: "normal" | "warning";
-};
+  const [tab, setTab] = useState<"providers" | "catalog">("providers");
+  const [providers, setProviders] = useState<ModelProviderConfig[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [form, setForm] = useState(() => emptyProviderForm());
+  const [testStatus, setTestStatus] = useState<Record<string, ConnectionStatus>>({});
 
-function GpuDashboard({ locale, t }: GpuDashboardProps) {
-  const gx = t.console.gpu;
+  const [catalogFilter, setCatalogFilter] = useState<string>("all");
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [models, setModels] = useState<BuiltInModel[]>(builtInModels);
 
-  // Active status states
-  const [nodes, setNodes] = useState<NodeInfo[]>([
-    {
-      id: "node-1",
-      name: "DromX-Compute-SXM-01",
-      hardware: "8x NVIDIA H100 SXM5 80GB",
-      vram: "512 / 640 GB",
-      load: 84,
-      temp: 68,
-      power: 2.7,
-      status: "active"
-    },
-    {
-      id: "node-2",
-      name: "DromX-Compute-PCI-02",
-      hardware: "4x NVIDIA A100 PCIe 80GB",
-      vram: "128 / 320 GB",
-      load: 42,
-      temp: 58,
-      power: 1.1,
-      status: "active"
-    }
-  ]);
+  const isEditing = editingId !== null || isAdding;
 
-  const [models] = useState<ModelService[]>([
-    {
-      id: "m1",
-      name: "DeepSeek-V3 (8x 80GB)",
-      node: "DromX-Compute-SXM-01",
-      vram: "320 GB",
-      qps: 142.4,
-      latency: "1.2s",
-      status: "normal"
-    },
-    {
-      id: "m2",
-      name: "Qwen-2.5-Coder-32B (1x 80GB)",
-      node: "DromX-Compute-PCI-02",
-      vram: "64 GB",
-      qps: 48.1,
-      latency: "0.6s",
-      status: "normal"
-    },
-    {
-      id: "m3",
-      name: "Llama-3.1-70B (2x 80GB)",
-      node: "DromX-Compute-SXM-01",
-      vram: "140 GB",
-      qps: 89.6,
-      latency: "0.9s",
-      status: "normal"
-    }
-  ]);
-
-  const [logs, setLogs] = useState<string[]>([
-    "[16:51:02] [SYSTEM] NVIDIA H100 GPU core cluster temperature stabilized at 68°C.",
-    "[16:51:14] [DEEPSEEK] Context window allocation: 64k tokens optimized (VRAM saved: 12GB).",
-    "[16:51:25] [QWEN] Batch processing triggered: 32 tasks completed successfully.",
-    "[16:51:32] [ROUTING] LLM query distributed to SXM-01 Node (Response time: 480ms).",
-    "[16:51:40] [SYSTEM] Periodic VRAM garbage collection complete. freed 8.4 GB."
-  ]);
-
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizeSuccess, setOptimizeSuccess] = useState(false);
-  const [rebootingNode, setRebootingNode] = useState<string | null>(null);
-
-  // Telemetry real-time updates simulation
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Simulate slight fluctuations in metrics
-      setNodes((prev) =>
-        prev.map((node) => {
-          if (node.status === "optimizing") return node;
-          const loadDiff = Math.floor(Math.random() * 5) - 2; // -2 to +2
-          const tempDiff = Math.floor(Math.random() * 3) - 1; // -1 to +1
-          const powerDiff = Number((Math.random() * 0.2 - 0.1).toFixed(2));
-          
-          return {
-            ...node,
-            load: Math.min(100, Math.max(0, node.load + loadDiff)),
-            temp: Math.min(95, Math.max(40, node.temp + tempDiff)),
-            power: Number(Math.max(0.2, node.power + powerDiff).toFixed(1))
-          };
-        })
-      );
-
-      // Randomly append a telemetry log
-      const logTemplates = [
-        `[${new Date().toTimeString().split(" ")[0]}] [SYSTEM] Telemetry check: H100 clusters fully operational, power limits optimal.`,
-        `[${new Date().toTimeString().split(" ")[0]}] [ROUTING] Dynamic load balancer successfully re-routed 18 inference tokens.`,
-        `[${new Date().toTimeString().split(" ")[0]}] [VRAM] Allocated 4.2GB video memory for incoming JSON generation stream.`,
-        `[${new Date().toTimeString().split(" ")[0]}] [SCHEDULER] Inference queue cleared. Total latency avg: 0.88s.`
-      ];
-      const randomLog = logTemplates[Math.floor(Math.random() * logTemplates.length)];
-      setLogs((prev) => [randomLog, ...prev.slice(0, 14)]);
-    }, 4000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleOptimizeVram = () => {
-    setIsOptimizing(true);
-    setOptimizeSuccess(false);
-
-    // Simulate node VRAM optimization
-    setNodes((prev) =>
-      prev.map((n) => ({
-        ...n,
-        status: "optimizing",
-        load: Math.round(n.load / 2)
-      }))
-    );
-
-    setTimeout(() => {
-      setIsOptimizing(false);
-      setOptimizeSuccess(true);
-      setNodes((prev) =>
-        prev.map((n) => ({
-          ...n,
-          status: "active",
-          vram: n.id === "node-1" ? "428 / 640 GB" : "96 / 320 GB"
-        }))
-      );
-      setLogs((prev) => [
-        `[${new Date().toTimeString().split(" ")[0]}] [VRAM] Memory compaction successfully defragmented H100 and A100 caches!`,
-        ...prev
-      ]);
-      setTimeout(() => setOptimizeSuccess(false), 3000);
-    }, 2000);
+  const resetForm = () => {
+    setForm(emptyProviderForm());
+    setEditingId(null);
+    setIsAdding(false);
   };
 
-  const handleRebootNode = (nodeId: string, nodeName: string) => {
-    setRebootingNode(nodeId);
-    setNodes((prev) =>
-      prev.map((n) => (n.id === nodeId ? { ...n, load: 0, status: "optimizing" } : n))
-    );
-    setLogs((prev) => [
-      `[${new Date().toTimeString().split(" ")[0]}] [SYSTEM] Node ${nodeName} reboot command dispatched. Warm start triggered...`,
-      ...prev
-    ]);
+  const handleAdd = () => {
+    setForm(emptyProviderForm());
+    setEditingId(null);
+    setIsAdding(true);
+  };
 
-    setTimeout(() => {
-      setRebootingNode(null);
-      setNodes((prev) =>
-        prev.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                load: 40,
-                status: "active"
-              }
-            : n
+  const handleEdit = (provider: ModelProviderConfig) => {
+    setForm({
+      name: provider.name,
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      modelNames: [...provider.modelNames]
+    });
+    setEditingId(provider.id);
+    setIsAdding(false);
+  };
+
+  const handleDelete = (id: string) => {
+    setProviders((prev) => prev.filter((p) => p.id !== id));
+    if (editingId === id) resetForm();
+  };
+
+  const handleSave = () => {
+    if (editingId) {
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === editingId
+            ? { ...p, name: form.name, baseUrl: form.baseUrl, apiKey: form.apiKey, modelNames: form.modelNames }
+            : p
         )
       );
-      setLogs((prev) => [
-        `[${new Date().toTimeString().split(" ")[0]}] [SYSTEM] Node ${nodeName} warm reboot complete. Connected and operational.`,
+    } else {
+      const provider = createProviderConfig();
+      setProviders((prev) => [
+        { ...provider, name: form.name, baseUrl: form.baseUrl, apiKey: form.apiKey, modelNames: form.modelNames },
         ...prev
       ]);
-    }, 3000);
+    }
+    resetForm();
+  };
+
+  const handleTestConnection = (id: string) => {
+    setTestStatus((prev) => ({ ...prev, [id]: "testing" }));
+    setProviders((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, connectionStatus: "testing" } : p))
+    );
+    setTimeout(() => {
+      const success = Math.random() > 0.15;
+      const status: ConnectionStatus = success ? "connected" : "error";
+      setTestStatus((prev) => ({ ...prev, [id]: status }));
+      setProviders((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, connectionStatus: status } : p))
+      );
+    }, 1200);
+  };
+
+  const handleBuy = (modelId: string) => {
+    setModels((prev) =>
+      prev.map((m) => (m.id === modelId ? { ...m, purchased: true } : m))
+    );
+  };
+
+  const valid =
+    form.name.trim().length > 0 &&
+    /^https?:\/\/.+/.test(form.baseUrl.trim()) &&
+    form.apiKey.trim().length > 0 &&
+    form.modelNames.length > 0;
+
+  const visibleModels = useMemo(() => {
+    return models.filter((model) => {
+      if (catalogFilter === "free" && model.pricing !== "free") return false;
+      if (catalogFilter === "paid" && model.pricing !== "paid") return false;
+      if (catalogFilter === "purchased" && !model.purchased) return false;
+      if (!catalogSearch.trim()) return true;
+      const needle = catalogSearch.toLowerCase();
+      return [model.name, model.provider, model.description, model.category].some((v) =>
+        v.toLowerCase().includes(needle)
+      );
+    });
+  }, [catalogFilter, catalogSearch, models]);
+
+  const freeCount = models.filter((m) => m.pricing === "free").length;
+  const paidCount = models.filter((m) => m.pricing === "paid").length;
+
+  const statusIcon = (status: ConnectionStatus) => {
+    switch (status) {
+      case "connected":
+        return <CheckCircle2 size={13} color="#10b981" />;
+      case "testing":
+        return <Loader2 size={13} className="animate-spin" color="#f59e0b" />;
+      case "error":
+        return <AlertCircle size={13} color="#ef4444" />;
+      default:
+        return <span style={{ width: 13, height: 13, borderRadius: "50%", background: "var(--border-color)", display: "inline-block" }} />;
+    }
   };
 
   return (
-    <div className="console-main gpu-shell" lang={locale}>
-      <div className="skills-header" style={{ marginBottom: "20px" }}>
-        <span className="section-label">
-          {locale === "en" ? "Hardware Infrastructure" : "基础设施运营层"}
-        </span>
-        <h1 style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>{gx.title}</span>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className={`console-action ${optimizeSuccess ? "is-success" : "is-primary"}`}
-              type="button"
-              onClick={handleOptimizeVram}
-              disabled={isOptimizing}
-              style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px" }}
-            >
-              {isOptimizing ? (
-                <RotateCw size={14} className="animate-spin" />
-              ) : optimizeSuccess ? (
-                <Check size={14} />
-              ) : (
-                <Settings size={14} />
-              )}
-              {optimizeSuccess
-                ? locale === "en"
-                  ? "VRAM Optimized!"
-                  : "显存已优化！"
-                : gx.actions.optimize}
-            </button>
-          </div>
-        </h1>
-        <p>{gx.subtitle}</p>
-      </div>
-
-      {/* GPU Overview Statistics Grid */}
-      <div className="metrics-summary-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-        <div className="skills-rail-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ padding: "10px", borderRadius: "8px", background: "rgba(99, 102, 241, 0.15)", color: "rgb(129, 140, 248)" }}>
-            <Cpu size={24} />
-          </div>
-          <div>
-            <span style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>{gx.globalUtilization}</span>
-            <strong style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
-              {isOptimizing ? "32.0%" : "63.0%"}
-            </strong>
-          </div>
-        </div>
-
-        <div className="skills-rail-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ padding: "10px", borderRadius: "8px", background: "rgba(16, 185, 129, 0.15)", color: "rgb(52, 211, 153)" }}>
-            <HardDrive size={24} />
-          </div>
-          <div>
-            <span style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>{gx.vramAllocation}</span>
-            <strong style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
-              {isOptimizing ? "556 / 960 GB" : "640 / 960 GB"}
-            </strong>
-          </div>
-        </div>
-
-        <div className="skills-rail-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ padding: "10px", borderRadius: "8px", background: "rgba(245, 158, 11, 0.15)", color: "rgb(251, 191, 36)" }}>
-            <Zap size={24} />
-          </div>
-          <div>
-            <span style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>{gx.powerConsumption}</span>
-            <strong style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
-              {isOptimizing ? "1.8 kW" : "3.8 kW"}
-            </strong>
-          </div>
-        </div>
-
-        <div className="skills-rail-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ padding: "10px", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", color: "rgb(248, 113, 113)" }}>
-            <Flame size={24} />
-          </div>
-          <div>
-            <span style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>{gx.temperature}</span>
-            <strong style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
-              {isOptimizing ? "52°C" : "63°C"}
-            </strong>
-          </div>
+    <div className="console-main" lang={locale}>
+      <div className="console-summary" style={{ marginBottom: "20px" }}>
+        <span className="section-label">{cx.headerLabel}</span>
+        <h1>{cx.title}</h1>
+        <p>{cx.subtitle}</p>
+        <div className="summary-metrics">
+          <span>{cx.providerCount(providers.length)}</span>
+          <span>{cx.modelCount(models.length)}</span>
+          <span>{cx.freeModelCount(freeCount)}</span>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
-        
-        {/* Node Cards and Running Services */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <section className="console-section" style={{ width: "100%", padding: "20px" }}>
-            <div className="section-header" style={{ marginBottom: "16px" }}>
-              <div>
-                <span className="section-label">{gx.nodeHealth}</span>
-                <h2>{gx.activeNodes}</h2>
+      <div className="store-filter-tabs" style={{ marginBottom: "20px" }}>
+        <button
+          type="button"
+          className={`store-filter-tab ${tab === "providers" ? "is-active" : ""}`}
+          onClick={() => setTab("providers")}
+        >
+          {cx.tabs.myProviders}
+        </button>
+        <button
+          type="button"
+          className={`store-filter-tab ${tab === "catalog" ? "is-active" : ""}`}
+          onClick={() => setTab("catalog")}
+        >
+          {cx.tabs.modelCatalog}
+        </button>
+      </div>
+
+      {tab === "providers" ? (
+        <section className="console-section" aria-label={cx.providers.title}>
+          <div className="section-header" style={{ marginBottom: "16px" }}>
+            <div>
+              <span className="section-label">{cx.providers.title}</span>
+              <h2>{cx.providers.title}</h2>
+            </div>
+            {!isAdding && !editingId && (
+              <div className="action-row">
+                <button className="console-action is-primary" type="button" onClick={handleAdd} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Plus size={14} />
+                  {cx.providers.addButton}
+                </button>
+              </div>
+            )}
+          </div>
+          <p style={{ color: "var(--text-muted)", fontSize: "13px", marginBottom: "16px" }}>{cx.providers.description}</p>
+
+          {isEditing && (
+            <div className="skills-rail-card" style={{ padding: "20px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>
+                    {cx.providers.form.name}
+                  </label>
+                  <input
+                    className="store-search-input"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    placeholder={cx.providers.form.namePlaceholder}
+                    value={form.name}
+                    onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>
+                    {cx.providers.form.baseUrl}
+                  </label>
+                  <input
+                    className="store-search-input"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    placeholder={cx.providers.form.baseUrlPlaceholder}
+                    value={form.baseUrl}
+                    onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>
+                    {cx.providers.form.apiKey}
+                  </label>
+                  <input
+                    className="store-search-input"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    type="password"
+                    placeholder={cx.providers.form.apiKeyPlaceholder}
+                    value={form.apiKey}
+                    onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>
+                    {cx.providers.form.modelNames}
+                  </label>
+                  <input
+                    className="store-search-input"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    placeholder={cx.providers.form.modelNamesPlaceholder}
+                    value={form.modelNames.join(", ")}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        modelNames: e.target.value
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                      }))
+                    }
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
+                    {cx.providers.form.modelNamesHint}
+                  </span>
+                </div>
+                <div className="action-row" style={{ marginTop: "4px" }}>
+                  <button className="console-action is-primary" type="button" onClick={handleSave} disabled={!valid}>
+                    {editingId ? cx.providers.form.update : cx.providers.form.save}
+                  </button>
+                  <button className="console-action" type="button" onClick={resetForm}>
+                    {cx.providers.form.cancel}
+                  </button>
+                </div>
               </div>
             </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {nodes.map((node) => (
-                <div
-                  key={node.id}
-                  style={{
-                    padding: "16px",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "8px",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    position: "relative",
-                    overflow: "hidden"
-                  }}
-                >
-                  {/* Subtle pulsing green light inside card */}
+          )}
+
+          {providers.length === 0 && !isEditing ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border-color)", borderRadius: "8px" }}>
+              {cx.providers.emptyState}
+            </div>
+          ) : (
+            <div className="agent-registry" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "16px" }}>
+              {providers.map((provider) => {
+                const status = testStatus[provider.id] ?? provider.connectionStatus;
+                return (
                   <div
-                    style={{
-                      position: "absolute",
-                      top: "16px",
-                      right: "16px",
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: node.status === "optimizing" ? "#f59e0b" : "#10b981",
-                      boxShadow: node.status === "optimizing" ? "0 0 8px #f59e0b" : "0 0 8px #10b981"
-                    }}
-                  />
-                  
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+                    key={provider.id}
+                    className="skill-card"
+                    style={{ padding: "16px" }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <div>
+                        <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 4px" }}>
+                          {provider.name}
+                        </h3>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}>
+                          {statusIcon(status)}
+                          <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>
+                            {cx.providers.status[status]}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          className="console-action"
+                          type="button"
+                          style={{ padding: "4px 8px", fontSize: "11px" }}
+                          onClick={() => handleTestConnection(provider.id)}
+                          disabled={status === "testing"}
+                          title={cx.providers.form.testConnection}
+                        >
+                          <Wifi size={12} />
+                        </button>
+                        <button
+                          className="console-action"
+                          type="button"
+                          style={{ padding: "4px 8px", fontSize: "11px" }}
+                          onClick={() => handleEdit(provider)}
+                          disabled={isAdding}
+                        >
+                          {locale === "en" ? "Edit" : "编辑"}
+                        </button>
+                        <button
+                          className="console-action"
+                          type="button"
+                          style={{ padding: "4px 8px", fontSize: "11px", color: "var(--danger, #ef4444)" }}
+                          onClick={() => {
+                            if (window.confirm(cx.providers.form.confirmDelete)) handleDelete(provider.id);
+                          }}
+                          disabled={isAdding}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>
+                      <span>{provider.baseUrl}</span>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {provider.modelNames.map((name) => (
+                        <span key={name} className="summary-chip" style={{ fontSize: "11px" }}>
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="console-section" aria-label={cx.catalog.title}>
+          <div style={{ marginBottom: "16px" }}>
+            <span className="section-label">{cx.catalog.title}</span>
+            <h2>{cx.catalog.title}</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>{cx.catalog.description}</p>
+          </div>
+
+          <div className="skills-toolbar" style={{ marginBottom: "16px" }}>
+            <div className="store-search-wrap" style={{ flex: 1, marginRight: "16px" }}>
+              <input
+                className="store-search-input"
+                aria-label={cx.catalog.searchPlaceholder}
+                placeholder={cx.catalog.searchPlaceholder}
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+              />
+            </div>
+            <div className="store-filter-tabs">
+              {[
+                ["all", cx.catalog.filterAll],
+                ["free", cx.catalog.filterFree],
+                ["paid", cx.catalog.filterPaid],
+                ["purchased", cx.catalog.filterPurchased]
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`store-filter-tab ${catalogFilter === key ? "is-active" : ""}`}
+                  onClick={() => setCatalogFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {visibleModels.length === 0 ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border-color)", borderRadius: "8px" }}>
+              {cx.catalog.noResults}
+            </div>
+          ) : (
+            <div className="agent-registry" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+              {visibleModels.map((model) => (
+                <div key={model.id} className="skill-card" style={{ padding: "16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                     <div>
-                      <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
-                        <Server size={15} style={{ color: "var(--text-muted)" }} />
-                        {node.name}
+                      <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 2px" }}>
+                        {model.name}
                       </h3>
-                      <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{node.hardware}</span>
+                      <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{model.provider}</span>
                     </div>
-                    <button
-                      className="console-action"
-                      type="button"
-                      disabled={rebootingNode === node.id || node.status === "optimizing"}
-                      onClick={() => handleRebootNode(node.id, node.name)}
-                      style={{ padding: "4px 8px", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}
-                    >
-                      {rebootingNode === node.id ? (
-                        <RotateCw size={11} className="animate-spin" />
-                      ) : (
-                        <RotateCw size={11} />
-                      )}
-                      {gx.actions.reboot}
-                    </button>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", fontSize: "13px" }}>
-                    <div>
-                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "11px" }}>VRAM Load</span>
-                      <strong style={{ color: "var(--text-primary)" }}>{node.vram}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "11px" }}>GPU Temp</span>
-                      <strong style={{ color: node.temp > 70 ? "rgb(248, 113, 113)" : "var(--text-primary)" }}>{node.temp}°C</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "11px" }}>Power</span>
-                      <strong style={{ color: "var(--text-primary)" }}>{node.power} kW</strong>
-                    </div>
-                  </div>
-
-                  {/* Telemetry percentage bar */}
-                  <div style={{ marginTop: "14px", height: "4px", background: "rgba(255, 255, 255, 0.05)", borderRadius: "2px" }}>
-                    <div
+                    <span
+                      className="summary-chip"
                       style={{
-                        height: "100%",
-                        width: `${node.load}%`,
-                        background: node.load > 80 ? "rgb(248, 113, 113)" : "rgb(129, 140, 248)",
-                        borderRadius: "2px",
-                        transition: "width 1s ease"
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        background: model.pricing === "free" ? "rgba(16,185,129,0.15)" : "rgba(99,102,241,0.15)",
+                        color: model.pricing === "free" ? "rgb(52,211,153)" : "rgb(129,140,248)"
                       }}
-                    />
+                    >
+                      {model.pricing === "free" ? cx.catalog.free : `$${model.price.toFixed(2)}`}
+                    </span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginTop: "4px", color: "var(--text-muted)" }}>
-                    <span>Utilization</span>
-                    <strong>{node.load}%</strong>
+                  <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "12px", lineHeight: "1.5" }}>
+                    {model.description}
+                  </p>
+                  <div className="skill-card-meta" style={{ marginBottom: "10px" }}>
+                    <span><Star size={13} /> {model.rating.toFixed(1)}</span>
+                    <span>{model.downloads.toLocaleString()} downloads</span>
+                    <span>{model.category}</span>
                   </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "12px", marginBottom: "14px" }}>
+                    <div>
+                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "11px" }}>{cx.catalog.contextWindow}</span>
+                      <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{model.contextWindow}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "11px" }}>{cx.catalog.speed}</span>
+                      <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{model.speed}</span>
+                    </div>
+                  </div>
+                  {model.purchased ? (
+                    <button className="console-action is-primary" type="button" style={{ width: "100%" }}>
+                      {cx.catalog.useModel}
+                    </button>
+                  ) : model.pricing === "free" ? (
+                    <button className="console-action is-primary" type="button" style={{ width: "100%" }}>
+                      {cx.catalog.useModel}
+                    </button>
+                  ) : (
+                    <div>
+                      <button
+                        className="console-action is-primary"
+                        type="button"
+                        style={{ width: "100%" }}
+                        onClick={() => handleBuy(model.id)}
+                      >
+                        {cx.catalog.buyModel} — ${model.price.toFixed(2)}
+                      </button>
+                      <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", textAlign: "center", marginTop: "6px" }}>
+                        {cx.catalog.lockedHint}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </section>
-
-          <section className="console-section" style={{ width: "100%", padding: "20px" }}>
-            <div className="section-header" style={{ marginBottom: "16px" }}>
-              <div>
-                <span className="section-label">Active Deployments</span>
-                <h2>{gx.runningModels}</h2>
-              </div>
-            </div>
-
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)" }}>
-                    <th style={{ padding: "8px 4px" }}>Model Name</th>
-                    <th style={{ padding: "8px 4px" }}>Host Cluster</th>
-                    <th style={{ padding: "8px 4px" }}>Memory</th>
-                    <th style={{ padding: "8px 4px" }}>Queries</th>
-                    <th style={{ padding: "8px 4px" }}>Latency</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {models.map((model) => (
-                    <tr key={model.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                      <td style={{ padding: "10px 4px", fontWeight: 600, color: "var(--text-primary)" }}>{model.name}</td>
-                      <td style={{ padding: "10px 4px", color: "var(--text-muted)" }}>{model.node.split("-").pop()}</td>
-                      <td style={{ padding: "10px 4px" }}>{model.vram}</td>
-                      <td style={{ padding: "10px 4px" }}>{model.qps} / s</td>
-                      <td style={{ padding: "10px 4px", color: "rgb(52, 211, 153)" }}>{model.latency}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        {/* Real-time Telemetry Live Log Stream */}
-        <section className="console-section" style={{ display: "flex", flexDirection: "column", padding: "20px" }}>
-          <div className="section-header" style={{ marginBottom: "12px" }}>
-            <div>
-              <span className="section-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <Terminal size={12} />
-                Live Log Stream
-              </span>
-              <h2>{gx.logs}</h2>
-            </div>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              background: "rgba(0,0,0,0.25)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              padding: "12px",
-              fontFamily: "monospace",
-              fontSize: "11px",
-              lineHeight: "1.6",
-              color: "rgba(255, 255, 255, 0.75)",
-              overflowY: "auto",
-              maxHeight: "480px"
-            }}
-          >
-            {logs.map((log, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: "6px",
-                  color: log.includes("[SYSTEM]")
-                    ? "#818cf8"
-                    : log.includes("[VRAM]")
-                    ? "#34d399"
-                    : "inherit",
-                  whiteSpace: "pre-wrap",
-                  animation: index === 0 ? "fadeInLog 0.3s ease-out" : "none"
-                }}
-              >
-                {log}
-              </div>
-            ))}
-          </div>
+          )}
         </section>
-      </div>
+      )}
 
-      {/* Embedded CSS animation for log insertion */}
       <style>{`
-        @keyframes fadeInLog {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </div>
   );
 }
 
-export default GpuDashboard;
+export default ComputeCenterDashboard;

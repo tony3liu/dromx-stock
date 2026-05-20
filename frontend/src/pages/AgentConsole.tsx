@@ -8,7 +8,7 @@ import GpuDashboard from "../components/agent-console/GpuDashboard";
 import type { SkillItem } from "../data/skills";
 import type React from "react";
 
-type ConsoleSection = "agents" | "skills" | "workflows" | "gpu" | "swarm";
+type ConsoleSection = "agents" | "skills" | "workflows" | "computeCenter" | "swarm";
 
 type AgentConsoleProps = {
   locale: Locale;
@@ -96,7 +96,7 @@ function AgentConsole({
     else if (index === 1) onNavigateSection("swarm");
     else if (index === 2) onNavigateSection("skills");
     else if (index === 3) onNavigateSection("workflows");
-    else if (index === 4) onNavigateSection("gpu");
+    else if (index === 4) onNavigateSection("computeCenter");
   };
 
   return (
