@@ -15,7 +15,7 @@ export type Locale = "en" | "zh";
 export const content = {
   en: {
     brand: "DromX",
-    nav: { platform: "Platform", console: "Console", trust: "Trust" },
+    nav: { agents: "Role Agents", skills: "Skills", console: "Console" },
     switchTo: "中文",
     heroEyebrow: "Digital labor network for the real world",
     heroTitle: "Infinite productivity for the world",
@@ -46,7 +46,7 @@ export const content = {
     finalTitle: "See the network that runs the work.",
     finalCta: "Enter Console",
     console: {
-      nav: ["Overview", "Agent Console", "Workflows", "Role Agents", "Swarms", "Skills", "Memory", "Compute", "Settings"],
+      nav: ["Agent Console", "Swarm", "Skills Workbench", "Workflows", "GPU"],
       workspace: "Digital Labor Workspace",
       status: "Swarm running",
       activeSwarm: "Active Swarm",
@@ -304,7 +304,176 @@ export const content = {
           rating: 4.2,
           downloads: 5600
         }
-      ]
+      ],
+      gpu: {
+        title: "GPU Compute Node Cluster",
+        subtitle: "Monitor active hardware units, allocate VRAM, and track running model inferences.",
+        globalUtilization: "Global GPU Utilization",
+        vramAllocation: "VRAM Allocation",
+        powerConsumption: "Power Consumption",
+        temperature: "Cluster Temperature",
+        activeNodes: "Active Nodes",
+        runningModels: "Running Inference Services",
+        nodeHealth: "Node Health Status",
+        logs: "Real-time Telemetry Logs",
+        actions: {
+          reboot: "Reboot Node",
+          optimize: "Optimize VRAM",
+          telemetry: "Hardware Telemetry"
+        }
+      }
+    },
+    skills: {
+      title: "Skills Store",
+      eyebrow: "Skills Store",
+      description: "Browse public Skills, manage drafts, and publish your own capabilities.",
+      counts: {
+        skills: (n: number) => `${n} ${n === 1 ? "Skill" : "Skills"}`,
+        free: (n: number) => `${n} Free`,
+        paid: (n: number) => `${n} Paid`,
+        installed: (n: number) => `${n} Installed`,
+        myDrafts: (n: number) => `${n} My ${n === 1 ? "Draft" : "Drafts"}`
+      },
+      viewsLabel: "Skills views",
+      store: "Store",
+      mySkills: "My Skills",
+      filters: {
+        all: "All",
+        free: "Free",
+        paid: "Paid",
+        installed: "Installed",
+        draft: "Draft"
+      },
+      searchLabel: "Search skills",
+      searchPlaceholder: "Search skills...",
+      catalogLabel: "Skill catalog",
+      detailLabel: "Skill Detail",
+      detailsRegion: "Skill details",
+      publicSkill: "Public Skill",
+      privateSkill: "Private Skill",
+      tools: "Tools",
+      inputsOutputs: "Inputs & Outputs",
+      agents: "Agents",
+      installs: (n: number) => `${n.toLocaleString()} installs`,
+      priceFree: "Free",
+      pricePaid: (n: number) => `$${n.toFixed(2)}`,
+      statuses: {
+        draft: "Draft",
+        review: "Review",
+        published: "Published"
+      },
+      actions: {
+        install: "Install",
+        disable: "Disable",
+        enable: "Enable",
+        create: "Create Skill",
+        openBuilder: "Open Builder",
+        saveDraft: "Save Draft",
+        submitReview: "Submit Review",
+        submitForReview: "Submit for Review",
+        publish: "Publish",
+        backToSkills: "Back to Skills"
+      },
+      workspaceTitle: "Private Workspace",
+      workspaceDescription: "Draft Skills stay private until published.",
+      capabilityLoop: "Capability Loop",
+      publishPath: "Publish Path",
+      builder: {
+        title: "New Skill",
+        eyebrow: "Skill Builder",
+        breadcrumbConsole: "Console",
+        breadcrumbSkills: "Skills",
+        breadcrumbBuilder: "Builder",
+        description: "Create a private draft before publishing it to the store.",
+        mySkill: "My Skill",
+        details: "Skill Details",
+        name: "Name",
+        summary: "Summary",
+        toolsMcp: "Tools / MCP",
+        inputsOutputs: "Inputs and Outputs",
+        inputs: "Inputs",
+        outputs: "Outputs",
+        publishFlow: "Publish Flow"
+      },
+      catalog: {
+        "lead-mapper": {
+          name: "Lead Mapper",
+          category: "Sales",
+          summary: "Turns raw prospect signals into structured lead routes.",
+          description: "Maps outbound discovery, qualification, and routing into a repeatable sales workflow.",
+          agentTypes: ["Sales Agent", "Growth Agent"],
+          tools: ["CRM Sync", "Spreadsheet Parser"],
+          inputs: ["Lead list", "ICP rules", "Signal feed"],
+          outputs: ["Qualified leads", "Routing notes"],
+          publisher: "DromX Labs"
+        },
+        "content-packager": {
+          name: "Content Packager",
+          category: "Marketing",
+          summary: "Shapes positioning notes into channel-ready content.",
+          description: "Packages briefs into launches, newsletters, and multi-channel publication plans.",
+          agentTypes: ["Content Agent", "Brand Agent"],
+          tools: ["Outline Generator", "Tone Adapter"],
+          inputs: ["Positioning brief", "Voice rules"],
+          outputs: ["Draft outline", "Channel variants"],
+          publisher: "DromX Labs"
+        },
+        "research-signal": {
+          name: "Research Signal Scanner",
+          category: "Research",
+          summary: "Extracts market assumptions from notes and documents.",
+          description: "Scans source material, detects patterns, and produces structured market signals.",
+          agentTypes: ["Research Agent"],
+          tools: ["Web Notes", "Source Extractor"],
+          inputs: ["Source notes", "Search scope"],
+          outputs: ["Signals", "Evidence list"],
+          publisher: "DromX Labs"
+        },
+        "finance-guard": {
+          name: "Finance Guardrails",
+          category: "Finance",
+          summary: "Keeps budget assumptions and operating metrics aligned.",
+          description: "Builds basic financial operating checks and flags mismatches in the model.",
+          agentTypes: ["Finance Agent"],
+          tools: ["Model Checker", "Assumption Diff"],
+          inputs: ["Revenue plan", "Cost model"],
+          outputs: ["Budget warnings", "Model notes"],
+          publisher: "DromX Labs"
+        },
+        "my-launch-draft": {
+          name: "Launch Brief Builder",
+          category: "Marketing",
+          summary: "My private draft Skill for launch planning.",
+          description: "Draft-only helper for turning launch inputs into a structured campaign brief.",
+          agentTypes: ["Content Agent"],
+          tools: ["Draft Editor"],
+          inputs: ["Launch notes"],
+          outputs: ["Campaign brief"],
+          publisher: "Me"
+        },
+        "my-research-skill": {
+          name: "Signal Extractor",
+          category: "Research",
+          summary: "My own research draft for source extraction.",
+          description: "Private workflow for pulling structured signals from raw notes.",
+          agentTypes: ["Research Agent"],
+          tools: ["Notes Parser"],
+          inputs: ["Notes", "Prompt template"],
+          outputs: ["Structured findings"],
+          publisher: "Me"
+        },
+        "my-new-skill": {
+          name: "Untitled Skill",
+          category: "General",
+          summary: "Describe the capability in one clear sentence.",
+          description: "Draft-only helper for turning launch inputs into a structured skill.",
+          agentTypes: ["Agent"],
+          tools: ["Draft Editor"],
+          inputs: ["Notes"],
+          outputs: ["Draft output"],
+          publisher: "Me"
+        }
+      }
     },
     platformLayers: [
       {
@@ -353,7 +522,7 @@ export const content = {
   },
   zh: {
     brand: "DromX",
-    nav: { platform: "平台", console: "控制台", trust: "信任" },
+    nav: { agents: "角色 Agent", skills: "技能商店", console: "控制台" },
     switchTo: "EN",
     heroEyebrow: "面向现实世界的数字劳动力网络",
     heroTitle: "让世界拥有无限生产力",
@@ -379,7 +548,7 @@ export const content = {
     finalTitle: "进入真正运转的数字劳动力网络。",
     finalCta: "进入控制台",
     console: {
-      nav: ["总览", "Agent 控制台", "工作流", "角色 Agent", "Swarms", "技能", "记忆", "算力", "设置"],
+      nav: ["Agent 控制台", "Swarm 控制台", "技能工作台", "工作流", "算力中心"],
       workspace: "数字劳动力工作区",
       status: "Swarm 运行中",
       activeSwarm: "活跃 Swarm",
@@ -635,7 +804,176 @@ export const content = {
           rating: 4.2,
           downloads: 5600
         }
-      ]
+      ],
+      gpu: {
+        title: "GPU 算力集群监控",
+        subtitle: "实时监控计算节点、显存分配并调度在线模型推理服务。",
+        globalUtilization: "全局 GPU 利用率",
+        vramAllocation: "显存分配",
+        powerConsumption: "功耗消耗",
+        temperature: "集群温度",
+        activeNodes: "计算节点",
+        runningModels: "在线推理模型",
+        nodeHealth: "节点健康状态",
+        logs: "硬件实时遥测日志",
+        actions: {
+          reboot: "重启节点",
+          optimize: "显存优化",
+          telemetry: "硬件遥测"
+        }
+      }
+    },
+    skills: {
+      title: "技能商店",
+      eyebrow: "技能商店",
+      description: "浏览公共技能，管理草稿，并发布你自己的能力模块。",
+      counts: {
+        skills: (n: number) => `${n} 个技能`,
+        free: (n: number) => `${n} 个免费`,
+        paid: (n: number) => `${n} 个付费`,
+        installed: (n: number) => `${n} 个已安装`,
+        myDrafts: (n: number) => `${n} 个我的草稿`
+      },
+      viewsLabel: "技能视图",
+      store: "商店",
+      mySkills: "我的技能",
+      filters: {
+        all: "全部",
+        free: "免费",
+        paid: "付费",
+        installed: "已安装",
+        draft: "草稿"
+      },
+      searchLabel: "搜索技能",
+      searchPlaceholder: "搜索技能...",
+      catalogLabel: "技能目录",
+      detailLabel: "技能详情",
+      detailsRegion: "技能详情",
+      publicSkill: "公共技能",
+      privateSkill: "私有技能",
+      tools: "工具",
+      inputsOutputs: "输入与输出",
+      agents: "角色 Agent",
+      installs: (n: number) => `${n.toLocaleString()} 次安装`,
+      priceFree: "免费",
+      pricePaid: (n: number) => `¥${Math.round(n * 7)}`,
+      statuses: {
+        draft: "草稿",
+        review: "审核中",
+        published: "已发布"
+      },
+      actions: {
+        install: "安装",
+        disable: "停用",
+        enable: "启用",
+        create: "创建技能",
+        openBuilder: "打开编辑器",
+        saveDraft: "保存草稿",
+        submitReview: "提交审核",
+        submitForReview: "提交审核",
+        publish: "发布",
+        backToSkills: "返回技能商店"
+      },
+      workspaceTitle: "私有工作区",
+      workspaceDescription: "草稿技能在发布前仅自己可见。",
+      capabilityLoop: "能力循环",
+      publishPath: "发布路径",
+      builder: {
+        title: "新建技能",
+        eyebrow: "技能编辑器",
+        breadcrumbConsole: "控制台",
+        breadcrumbSkills: "技能",
+        breadcrumbBuilder: "编辑器",
+        description: "先创建私有草稿，再发布到商店。",
+        mySkill: "我的技能",
+        details: "技能详情",
+        name: "名称",
+        summary: "摘要",
+        toolsMcp: "工具 / MCP",
+        inputsOutputs: "输入与输出",
+        inputs: "输入",
+        outputs: "输出",
+        publishFlow: "发布流程"
+      },
+      catalog: {
+        "lead-mapper": {
+          name: "线索映射器",
+          category: "销售",
+          summary: "将原始潜客信号转化为结构化线索路径。",
+          description: "把外呼发现、资格判断和线索分配映射成可复用的销售工作流。",
+          agentTypes: ["销售 Agent", "增长 Agent"],
+          tools: ["CRM 同步", "表格解析器"],
+          inputs: ["线索列表", "ICP 规则", "信号流"],
+          outputs: ["合格线索", "分配记录"],
+          publisher: "DromX Labs"
+        },
+        "content-packager": {
+          name: "内容打包器",
+          category: "营销",
+          summary: "将定位笔记整理成可发布的多渠道内容。",
+          description: "把简报封装成发布计划、邮件通讯和多渠道内容方案。",
+          agentTypes: ["内容 Agent", "品牌 Agent"],
+          tools: ["大纲生成器", "语气适配器"],
+          inputs: ["定位简报", "语气规则"],
+          outputs: ["内容大纲", "渠道版本"],
+          publisher: "DromX Labs"
+        },
+        "research-signal": {
+          name: "研究信号扫描器",
+          category: "研究",
+          summary: "从笔记和文档中提取市场假设。",
+          description: "扫描来源材料，识别模式，并产出结构化市场信号。",
+          agentTypes: ["研究 Agent"],
+          tools: ["网页笔记", "来源提取器"],
+          inputs: ["来源笔记", "搜索范围"],
+          outputs: ["信号", "证据列表"],
+          publisher: "DromX Labs"
+        },
+        "finance-guard": {
+          name: "财务护栏",
+          category: "财务",
+          summary: "保持预算假设与经营指标一致。",
+          description: "构建基础财务经营检查，并标记模型中的不一致。",
+          agentTypes: ["财务 Agent"],
+          tools: ["模型检查器", "假设差异"],
+          inputs: ["收入计划", "成本模型"],
+          outputs: ["预算预警", "模型备注"],
+          publisher: "DromX Labs"
+        },
+        "my-launch-draft": {
+          name: "发布简报构建器",
+          category: "营销",
+          summary: "用于发布规划的私有草稿技能。",
+          description: "把发布输入整理成结构化活动简报的草稿能力。",
+          agentTypes: ["内容 Agent"],
+          tools: ["草稿编辑器"],
+          inputs: ["发布笔记"],
+          outputs: ["活动简报"],
+          publisher: "我"
+        },
+        "my-research-skill": {
+          name: "信号提取器",
+          category: "研究",
+          summary: "用于来源提取的私有研究草稿。",
+          description: "从原始笔记中提取结构化信号的私有工作流。",
+          agentTypes: ["研究 Agent"],
+          tools: ["笔记解析器"],
+          inputs: ["笔记", "提示词模板"],
+          outputs: ["结构化发现"],
+          publisher: "我"
+        },
+        "my-new-skill": {
+          name: "未命名技能",
+          category: "通用",
+          summary: "用一句清晰的话描述这个能力。",
+          description: "把输入整理成结构化技能的私有草稿能力。",
+          agentTypes: ["Agent"],
+          tools: ["草稿编辑器"],
+          inputs: ["笔记"],
+          outputs: ["草稿输出"],
+          publisher: "我"
+        }
+      }
     },
     platformLayers: [
       {

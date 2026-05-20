@@ -2,11 +2,13 @@ import type { AppContent, Locale, StoreAgent, WorkflowData } from "../i18n/conte
 import AgentConsoleSummary from "../components/agent-console/AgentConsoleSummary";
 import AgentRegistry from "../components/agent-console/AgentRegistry";
 import ConsoleSidebar from "../components/agent-console/ConsoleSidebar";
-import RoleAgentsStore from "./RoleAgentsStore";
 import WorkflowsPage from "./WorkflowsPage";
+import SkillsWorkbench from "../components/agent-console/SkillsWorkbench";
+import GpuDashboard from "../components/agent-console/GpuDashboard";
+import type { SkillItem } from "../data/skills";
 import type React from "react";
 
-type ConsoleSection = "agents" | "workflows" | "store";
+type ConsoleSection = "agents" | "skills" | "workflows" | "gpu" | "swarm";
 
 type AgentConsoleProps = {
   locale: Locale;
@@ -33,6 +35,14 @@ type AgentConsoleProps = {
   onCreateWorkflow: () => void;
   onEditWorkflow: (index: number) => void;
   onUseAgent: (index: number) => void;
+  skills: SkillItem[];
+  selectedSkillId: string;
+  onSelectSkill: (id: string) => void;
+  onCreateSkill: () => void;
+  onOpenSkillBuilder: () => void;
+  onSaveSkillDraft: () => void;
+  onSubmitSkillReview: () => void;
+  onPublishSkill: () => void;
 };
 
 function AgentConsole({
@@ -59,16 +69,34 @@ function AgentConsole({
   onCreateWorkflow,
   onEditWorkflow,
   onUseAgent,
-  selectedAgentIndex
+  selectedAgentIndex,
+  skills,
+  selectedSkillId,
+  onSelectSkill,
+  onCreateSkill,
+  onOpenSkillBuilder,
+  onSaveSkillDraft,
+  onSubmitSkillReview,
+  onPublishSkill
 }: AgentConsoleProps) {
   const navItems = [...t.console.nav];
   const activeNavIndex =
-    consoleSection === "agents" ? 1 : consoleSection === "workflows" ? 2 : 3;
+    consoleSection === "agents"
+      ? 0
+      : consoleSection === "swarm"
+      ? 1
+      : consoleSection === "skills"
+      ? 2
+      : consoleSection === "workflows"
+      ? 3
+      : 4;
 
   const handleNav = (index: number) => {
-    if (index === 1) onNavigateSection("agents");
-    else if (index === 2) onNavigateSection("workflows");
-    else if (index === 3) onNavigateSection("store");
+    if (index === 0) onNavigateSection("agents");
+    else if (index === 1) onNavigateSection("swarm");
+    else if (index === 2) onNavigateSection("skills");
+    else if (index === 3) onNavigateSection("workflows");
+    else if (index === 4) onNavigateSection("gpu");
   };
 
   return (
@@ -100,6 +128,19 @@ function AgentConsole({
               onSelectAgent={onSelectAgent}
             />
           </section>
+        ) : consoleSection === "skills" ? (
+          <SkillsWorkbench
+            locale={locale}
+            skills={skills}
+            selectedSkillId={selectedSkillId}
+            onSelectSkill={onSelectSkill}
+            onCreateSkill={onCreateSkill}
+            onOpenSkillBuilder={onOpenSkillBuilder}
+            onSaveSkillDraft={onSaveSkillDraft}
+            onSubmitSkillReview={onSubmitSkillReview}
+            onPublishSkill={onPublishSkill}
+            t={t}
+          />
         ) : consoleSection === "workflows" ? (
           <WorkflowsPage
             locale={locale}
@@ -108,12 +149,33 @@ function AgentConsole({
             onCreateWorkflow={onCreateWorkflow}
             onEditWorkflow={onEditWorkflow}
           />
+        ) : consoleSection === "swarm" ? (
+          <section className="console-main">
+            <AgentConsoleSummary
+              locale={locale}
+              activeFilters={activeFilters}
+              availableStatuses={availableStatuses}
+              isSearchVisible={isSearchVisible}
+              onCreateAgent={onCreateAgent}
+              onToggleFilter={onToggleFilter}
+              onToggleSearch={onToggleSearch}
+              onSearchTermChange={onSearchTermChange}
+              searchInputRef={searchInputRef}
+              searchTerm={searchTerm}
+            />
+            <AgentRegistry
+              locale={locale}
+              roleAgentsTitle={t.console.roleAgents}
+              roles={t.console.roles.map((role, index) => ({ ...role, originalIndex: index }))}
+              selectedAgentIndex={selectedAgentIndex}
+              onOpenAgentBuilder={onOpenAgentBuilder}
+              onSelectAgent={onSelectAgent}
+            />
+          </section>
         ) : (
-          <RoleAgentsStore
+          <GpuDashboard
             locale={locale}
-            agents={storeAgents}
-            store={store}
-            onUseAgent={onUseAgent}
+            t={t}
           />
         )}
       </section>

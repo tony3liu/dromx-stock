@@ -1,3 +1,4 @@
+import type React from "react";
 import LogoMark from "./LogoMark";
 import type { Locale } from "../i18n/content";
 
@@ -13,9 +14,10 @@ type AppHeaderProps = {
   onToggleLocale: () => void;
   switchLabel: string;
   variant?: "landing" | "workspace";
+  rightAction?: React.ReactNode;
 };
 
-function AppHeader({ navItems, onNavigate, onToggleLocale, switchLabel, variant = "landing" }: AppHeaderProps) {
+function AppHeader({ navItems, onNavigate, onToggleLocale, switchLabel, variant = "landing", rightAction }: AppHeaderProps) {
   return (
     <header className={variant === "landing" ? "topbar" : "console-topbar"}>
       <a
@@ -48,9 +50,12 @@ function AppHeader({ navItems, onNavigate, onToggleLocale, switchLabel, variant 
           </a>
         ))}
       </nav>
-      <button className="lang-switch" type="button" onClick={onToggleLocale}>
-        {switchLabel}
-      </button>
+      <div className="header-right-action">
+        {rightAction}
+        <button className="lang-switch" type="button" onClick={onToggleLocale}>
+          {switchLabel}
+        </button>
+      </div>
     </header>
   );
 }
