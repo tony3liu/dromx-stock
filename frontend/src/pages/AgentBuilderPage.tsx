@@ -100,8 +100,10 @@ function AgentBuilderPage({ agent, breadcrumbs, locale, nav }: AgentBuilderPageP
 
   return (
     <main className="builder-shell" lang={locale}>
-      {nav}
-      {breadcrumbs}
+      <div className="builder-sticky-head">
+        {nav}
+        {breadcrumbs}
+      </div>
 
       <section className="builder-hero">
         <div className="builder-hero-copy">
@@ -331,25 +333,6 @@ function AgentBuilderPage({ agent, breadcrumbs, locale, nav }: AgentBuilderPageP
             </div>
           </section>
 
-          <section className="builder-section">
-            <div className="builder-section-head">
-              <h2>{locale === "en" ? "Release" : "发布"}</h2>
-            </div>
-            <div className="builder-release-summary">
-              <div className="builder-debug-item">
-                <span>{locale === "en" ? "State" : "状态"}</span>
-                <strong>{draft.status}</strong>
-              </div>
-              <div className="builder-debug-item">
-                <span>{locale === "en" ? "Last publish" : "最近发布"}</span>
-                <strong>{locale === "en" ? "Not published yet" : "尚未发布"}</strong>
-              </div>
-              <div className="builder-debug-item">
-                <span>{locale === "en" ? "Version" : "版本"}</span>
-                <strong>{locale === "en" ? "Draft v1" : "草稿 v1"}</strong>
-              </div>
-            </div>
-          </section>
         </aside>
       </section>
     </main>

@@ -4,23 +4,33 @@ import Breadcrumbs from "./components/Breadcrumbs";
 import AgentBuilderPage from "./pages/AgentBuilderPage";
 import AgentConsole from "./pages/AgentConsole";
 import LandingPage from "./pages/LandingPage";
+import WorkflowEditorPage from "./pages/WorkflowEditorPage";
 import { content, type Locale } from "./i18n/content";
 
 type RouteState =
   | { path: "/" }
   | { path: "/console" }
   | { path: "/agents/new" }
-  | { path: "/agents/:index/edit"; index: number };
+  | { path: "/agents/:index/edit"; index: number }
+  | { path: "/workflows/new" }
+  | { path: "/workflows/:index/edit"; index: number };
 
-type RoleFilter = "all" | "active" | "review" | "queued";
+type AgentStatus = "active" | "review" | "queued";
+type ConsoleSection = "agents" | "workflows" | "store";
 
 function parseRoute(pathname: string): RouteState {
   if (pathname === "/console") return { path: "/console" };
   if (pathname === "/agents/new") return { path: "/agents/new" };
+  if (pathname === "/workflows/new") return { path: "/workflows/new" };
 
-  const editMatch = pathname.match(/^\/agents\/(\d+)\/edit$/);
-  if (editMatch) {
-    return { path: "/agents/:index/edit", index: Number(editMatch[1]) };
+  const agentMatch = pathname.match(/^\/agents\/(\d+)\/edit$/);
+  if (agentMatch) {
+    return { path: "/agents/:index/edit", index: Number(agentMatch[1]) };
+  }
+
+  const workflowMatch = pathname.match(/^\/workflows\/(\d+)\/edit$/);
+  if (workflowMatch) {
+    return { path: "/workflows/:index/edit", index: Number(workflowMatch[1]) };
   }
 
   return { path: "/" };
@@ -30,8 +40,11 @@ function App() {
   const [locale, setLocale] = useState<Locale>("en");
   const [route, setRoute] = useState<RouteState>(() => parseRoute(window.location.pathname));
   const [selectedAgentIndex, setSelectedAgentIndex] = useState(0);
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [selectedWorkflowIndex, setSelectedWorkflowIndex] = useState(0);
+  const [activeFilters, setActiveFilters] = useState<Set<AgentStatus>>(new Set());
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [consoleSection, setConsoleSection] = useState<ConsoleSection>("agents");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const t = content[locale];
@@ -43,6 +56,9 @@ function App() {
     if (nextRoute.path === "/agents/:index/edit") {
       setSelectedAgentIndex(nextRoute.index);
     }
+    if (nextRoute.path === "/workflows/:index/edit") {
+      setSelectedWorkflowIndex(nextRoute.index);
+    }
     window.scrollTo({ behavior: "auto", left: 0, top: 0 });
   };
 
@@ -52,6 +68,9 @@ function App() {
       setRoute(nextRoute);
       if (nextRoute.path === "/agents/:index/edit") {
         setSelectedAgentIndex(nextRoute.index);
+      }
+      if (nextRoute.path === "/workflows/:index/edit") {
+        setSelectedWorkflowIndex(nextRoute.index);
       }
       window.scrollTo({ behavior: "auto", left: 0, top: 0 });
     };
@@ -74,11 +93,13 @@ function App() {
     />
   );
 
+  const availableStatuses: AgentStatus[] = ["active", "review", "queued"];
+
   const filteredRoles = useMemo(() => {
     return t.console.roles
       .map((role, index) => ({ ...role, originalIndex: index }))
       .filter((role) => {
-        if (roleFilter !== "all" && role.status !== roleFilter) {
+        if (activeFilters.size > 0 && !activeFilters.has(role.status as AgentStatus)) {
           return false;
         }
 
@@ -91,28 +112,57 @@ function App() {
           value.toLowerCase().includes(needle)
         );
       });
-  }, [roleFilter, searchTerm, t.console.roles]);
+  }, [activeFilters, searchTerm, t.console.roles]);
+
+  const handleToggleFilter = (status: AgentStatus) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSearch = () => {
+    if (isSearchVisible) {
+      setIsSearchVisible(false);
+      setSearchTerm("");
+    } else {
+      setIsSearchVisible(true);
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  };
 
   if (route.path === "/console") {
     return (
       <AgentConsole
         locale={locale}
         nav={header}
+        activeFilters={activeFilters}
+        availableStatuses={availableStatuses}
+        consoleSection={consoleSection}
+        isSearchVisible={isSearchVisible}
+        selectedAgentIndex={selectedAgentIndex}
+        searchTerm={searchTerm}
+        searchInputRef={searchInputRef}
+        roles={filteredRoles}
+        workflows={t.console.workflowList as unknown as Array<typeof t.console.workflowList[number]>}
+        storeAgents={[...t.console.storeAgents]}
+        store={t.console.store}
+        t={t}
         onCreateAgent={() => navigate("/agents/new")}
-        onFilterStatus={() => {
-          setRoleFilter((value) => (value === "all" ? "active" : value === "active" ? "review" : value === "review" ? "queued" : "all"));
-        }}
+        onToggleFilter={handleToggleFilter}
         onOpenAgentBuilder={(index) => navigate(`/agents/${index}/edit`)}
-        onSearchRoles={() => searchInputRef.current?.focus()}
+        onToggleSearch={handleToggleSearch}
         onSearchTermChange={setSearchTerm}
         onSelectAgent={(index) => setSelectedAgentIndex(index)}
-        onToggleLocale={() => setLocale(locale === "en" ? "zh" : "en")}
-        roleFilter={roleFilter}
-        roles={filteredRoles}
-        searchInputRef={searchInputRef}
-        searchTerm={searchTerm}
-        selectedAgentIndex={selectedAgentIndex}
-        t={t}
+        onNavigateSection={(section) => setConsoleSection(section)}
+        onCreateWorkflow={() => navigate("/workflows/new")}
+        onEditWorkflow={(index) => navigate(`/workflows/${index}/edit`)}
+        onUseAgent={(index) => navigate(`/agents/${index}/edit`)}
       />
     );
   }
@@ -134,6 +184,30 @@ function App() {
         }
         locale={locale}
         nav={header}
+      />
+    );
+  }
+
+  if (route.path === "/workflows/new" || route.path === "/workflows/:index/edit") {
+    const workflow =
+      route.path === "/workflows/:index/edit" ? t.console.workflowList[selectedWorkflowIndex] : undefined;
+    const editorTitle = workflow?.name ?? (locale === "en" ? "New Workflow" : "新建工作流");
+    return (
+      <WorkflowEditorPage
+        workflow={workflow as Parameters<typeof WorkflowEditorPage>[0]["workflow"]}
+        breadcrumbs={
+          <Breadcrumbs
+            items={[
+              { label: locale === "en" ? "Console" : "控制台", path: "/console" },
+              { label: editorTitle }
+            ]}
+            onNavigate={navigate}
+          />
+        }
+        locale={locale}
+        nav={header}
+        wf={t.console.workflows}
+        stepTypes={t.console.workflowStepTypes}
       />
     );
   }
