@@ -323,6 +323,8 @@ export const content = {
           agentsInSwarm: "Agents in Swarm",
           availableAgents: "Available Agents",
           noAgentsSelected: "No agents selected. Add agents from the available pool below.",
+          leaderLabel: "Leader Agent",
+          leaderHint: "Select one agent as the swarm leader. Required.",
           save: "Save Swarm",
           cancel: "Cancel"
         },
@@ -898,6 +900,8 @@ export const content = {
           agentsInSwarm: "团体成员",
           availableAgents: "可用 Agent",
           noAgentsSelected: "尚未选择 Agent。从下方可用池中添加。",
+          leaderLabel: "Leader Agent",
+          leaderHint: "选择一个 Agent 作为团体 Leader。必填。",
           save: "保存团体",
           cancel: "取消"
         },

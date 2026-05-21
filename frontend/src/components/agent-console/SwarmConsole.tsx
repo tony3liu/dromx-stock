@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, Users, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Users, ArrowLeft, Crown } from "lucide-react";
 import type { AppContent, Locale } from "../../i18n/content";
 import { createSwarm, type Swarm, type SwarmAgent } from "../../data/swarms";
 
@@ -26,6 +26,7 @@ function SwarmConsole({
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editAgentNames, setEditAgentNames] = useState<string[]>([]);
+  const [editLeaderAgentName, setEditLeaderAgentName] = useState("");
   const [editingSwarmId, setEditingSwarmId] = useState<string | null>(null);
 
   const uniqueAvailableAgents = useMemo(() => {
@@ -41,6 +42,7 @@ function SwarmConsole({
     setEditName("");
     setEditDescription("");
     setEditAgentNames([]);
+    setEditLeaderAgentName("");
     setEditingSwarmId(null);
     setIsEditing(true);
   };
@@ -49,6 +51,7 @@ function SwarmConsole({
     setEditName(swarm.name);
     setEditDescription(swarm.description);
     setEditAgentNames([...swarm.agentNames]);
+    setEditLeaderAgentName(swarm.leaderAgentName);
     setEditingSwarmId(swarm.id);
     setIsEditing(true);
   };
@@ -59,22 +62,38 @@ function SwarmConsole({
     setEditName("");
     setEditDescription("");
     setEditAgentNames([]);
+    setEditLeaderAgentName("");
   };
 
   const handleSave = () => {
     if (!editName.trim()) return;
+    if (!editLeaderAgentName) return;
+
     const swarm = editingSwarmId
-      ? { ...swarms.find((s) => s.id === editingSwarmId)!, name: editName.trim(), description: editDescription.trim(), agentNames: editAgentNames }
-      : createSwarm(editName.trim(), editDescription.trim(), editAgentNames);
+      ? {
+          ...swarms.find((s) => s.id === editingSwarmId)!,
+          name: editName.trim(),
+          description: editDescription.trim(),
+          agentNames: editAgentNames,
+          leaderAgentName: editLeaderAgentName
+        }
+      : createSwarm(editName.trim(), editDescription.trim(), editAgentNames, editLeaderAgentName);
+
     onSaveSwarm(swarm);
     cancelEdit();
   };
 
   const toggleAgent = (agentName: string) => {
-    setEditAgentNames((prev) =>
-      prev.includes(agentName) ? prev.filter((n) => n !== agentName) : [...prev, agentName]
-    );
+    setEditAgentNames((prev) => {
+      const next = prev.includes(agentName) ? prev.filter((n) => n !== agentName) : [...prev, agentName];
+      if (!next.includes(editLeaderAgentName)) {
+        setEditLeaderAgentName(next[0] ?? "");
+      }
+      return next;
+    });
   };
+
+  const valid = editName.trim().length > 0 && editAgentNames.length > 0 && editLeaderAgentName.length > 0;
 
   return (
     <div className="console-main" lang={locale}>
@@ -122,7 +141,7 @@ function SwarmConsole({
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            {/* Left column: name + description */}
+            {/* Left column: name + description + leader + members + save */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>
@@ -148,6 +167,59 @@ function SwarmConsole({
                   onChange={(e) => setEditDescription(e.target.value)}
                 />
               </div>
+
+              {/* Leader selection */}
+              <div>
+                <span style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "var(--text-primary)" }}>
+                  {sx.form.leaderLabel}
+                </span>
+                {editAgentNames.length === 0 ? (
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                    {locale === "en" ? "Add agents first, then select a leader." : "请先添加 Agent，再选择 Leader。"}
+                  </p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {editAgentNames.map((name) => (
+                      <label
+                        key={name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "8px 10px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          color: "var(--text-primary)",
+                          border: "1px solid var(--border-color)",
+                          background: editLeaderAgentName === name ? "rgba(234, 179, 8, 0.12)" : "transparent"
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="swarmLeader"
+                          checked={editLeaderAgentName === name}
+                          onChange={() => setEditLeaderAgentName(name)}
+                          style={{ accentColor: "rgb(234, 179, 8)" }}
+                        />
+                        <Crown size={13} color={editLeaderAgentName === name ? "#eab308" : "var(--text-muted)"} />
+                        <span style={{ fontWeight: editLeaderAgentName === name ? 600 : 400 }}>
+                          {name}
+                        </span>
+                        {editLeaderAgentName === name && (
+                          <span style={{ fontSize: "10px", color: "#eab308", fontWeight: 600, textTransform: "uppercase" }}>
+                            Leader
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "6px" }}>
+                  {sx.form.leaderHint}
+                </p>
+              </div>
+
               <div>
                 <span style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "var(--text-primary)" }}>
                   {sx.form.agentsInSwarm}
@@ -168,6 +240,9 @@ function SwarmConsole({
                         style={{ cursor: "pointer" }}
                         onClick={() => toggleAgent(name)}
                       >
+                        {name === editLeaderAgentName && (
+                          <Crown size={10} style={{ display: "inline", marginRight: "4px", color: "#eab308" }} />
+                        )}
                         {name} ×
                       </span>
                     ))}
@@ -179,7 +254,7 @@ function SwarmConsole({
                   className="console-action is-primary"
                   type="button"
                   onClick={handleSave}
-                  disabled={!editName.trim()}
+                  disabled={!valid}
                 >
                   {sx.form.save}
                 </button>
@@ -194,7 +269,7 @@ function SwarmConsole({
               <span style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "8px", color: "var(--text-primary)" }}>
                 {sx.form.availableAgents}
               </span>
-              <div style={{ maxHeight: "360px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "8px" }}>
+              <div style={{ maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "8px" }}>
                 {uniqueAvailableAgents.map((agent) => {
                   const checked = editAgentNames.includes(agent.name);
                   return (
@@ -245,6 +320,13 @@ function SwarmConsole({
                         {swarm.agentNames.length} {locale === "en" ? "agents" : "个 Agent"}
                       </span>
                     </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#eab308" }}>
+                    <Crown size={12} />
+                    <span style={{ fontWeight: 600 }}>{swarm.leaderAgentName}</span>
+                    <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                      {locale === "en" ? "(Leader)" : "(Leader)"}
+                    </span>
                   </div>
                   {swarm.description ? (
                     <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.4 }}>{swarm.description}</p>

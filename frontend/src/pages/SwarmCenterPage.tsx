@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Users } from "lucide-react";
+import { Users, Crown } from "lucide-react";
 import type React from "react";
 import type { AppContent, Locale } from "../i18n/content";
 import type { Swarm } from "../data/swarms";
@@ -75,6 +75,11 @@ function SwarmCenterPage({ locale, nav, swarms, t, onUseSwarm }: SwarmCenterPage
                         {swarm.agentNames.length} {sx.agents}
                       </span>
                     </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#eab308" }}>
+                    <Crown size={12} />
+                    <span style={{ fontWeight: 600 }}>{swarm.leaderAgentName}</span>
+                    <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(Leader)</span>
                   </div>
                   {swarm.description ? (
                     <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.4 }}>{swarm.description}</p>
