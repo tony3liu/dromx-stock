@@ -5,7 +5,9 @@ import ConsoleSidebar from "../components/agent-console/ConsoleSidebar";
 import WorkflowsPage from "./WorkflowsPage";
 import SkillsWorkbench from "../components/agent-console/SkillsWorkbench";
 import GpuDashboard from "../components/agent-console/GpuDashboard";
+import SwarmConsole from "../components/agent-console/SwarmConsole";
 import type { SkillItem } from "../data/skills";
+import type { Swarm, SwarmAgent } from "../data/swarms";
 import type React from "react";
 
 type ConsoleSection = "agents" | "skills" | "workflows" | "computeCenter" | "swarm";
@@ -43,6 +45,12 @@ type AgentConsoleProps = {
   onSaveSkillDraft: () => void;
   onSubmitSkillReview: () => void;
   onPublishSkill: () => void;
+  swarms: Swarm[];
+  selectedSwarmId: string;
+  availableAgents: SwarmAgent[];
+  onSelectSwarm: (id: string) => void;
+  onSaveSwarm: (swarm: Swarm) => void;
+  onDeleteSwarm: (id: string) => void;
 };
 
 function AgentConsole({
@@ -77,7 +85,13 @@ function AgentConsole({
   onOpenSkillBuilder,
   onSaveSkillDraft,
   onSubmitSkillReview,
-  onPublishSkill
+  onPublishSkill,
+  swarms,
+  selectedSwarmId,
+  availableAgents,
+  onSelectSwarm,
+  onSaveSwarm,
+  onDeleteSwarm
 }: AgentConsoleProps) {
   const navItems = [...t.console.nav];
   const activeNavIndex =
@@ -150,28 +164,16 @@ function AgentConsole({
             onEditWorkflow={onEditWorkflow}
           />
         ) : consoleSection === "swarm" ? (
-          <section className="console-main">
-            <AgentConsoleSummary
-              locale={locale}
-              activeFilters={activeFilters}
-              availableStatuses={availableStatuses}
-              isSearchVisible={isSearchVisible}
-              onCreateAgent={onCreateAgent}
-              onToggleFilter={onToggleFilter}
-              onToggleSearch={onToggleSearch}
-              onSearchTermChange={onSearchTermChange}
-              searchInputRef={searchInputRef}
-              searchTerm={searchTerm}
-            />
-            <AgentRegistry
-              locale={locale}
-              roleAgentsTitle={t.console.roleAgents}
-              roles={t.console.roles.map((role, index) => ({ ...role, originalIndex: index }))}
-              selectedAgentIndex={selectedAgentIndex}
-              onOpenAgentBuilder={onOpenAgentBuilder}
-              onSelectAgent={onSelectAgent}
-            />
-          </section>
+          <SwarmConsole
+            locale={locale}
+            t={t}
+            swarms={swarms}
+            selectedSwarmId={selectedSwarmId}
+            availableAgents={availableAgents}
+            onSelectSwarm={onSelectSwarm}
+            onSaveSwarm={onSaveSwarm}
+            onDeleteSwarm={onDeleteSwarm}
+          />
         ) : (
           <GpuDashboard
             locale={locale}

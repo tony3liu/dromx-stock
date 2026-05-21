@@ -11,6 +11,7 @@ import WorkflowEditorPage from "./pages/WorkflowEditorPage";
 import RoleAgentsStore from "./pages/RoleAgentsStore";
 import { content, type Locale } from "./i18n/content";
 import { createSkillDraft, skillCatalog, type SkillItem } from "./data/skills";
+import { createSwarm, defaultSwarms, type Swarm, type SwarmAgent } from "./data/swarms";
 
 type RouteState =
   | { path: "/" }
@@ -58,6 +59,8 @@ function App() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [consoleSection, setConsoleSection] = useState<ConsoleSection>("agents");
+  const [swarms, setSwarms] = useState<Swarm[]>(() => defaultSwarms);
+  const [selectedSwarmId, setSelectedSwarmId] = useState(defaultSwarms[0]?.id ?? "");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const t = content[locale];
@@ -149,6 +152,44 @@ function App() {
         );
       });
   }, [activeFilters, searchTerm, t.console.roles]);
+
+  const availableAgents = useMemo<SwarmAgent[]>(() => {
+    const consoleAgents: SwarmAgent[] = t.console.roles.map((r) => ({
+      name: r.name,
+      role: r.role,
+      skills: r.skills
+    }));
+    const ownedStoreAgents: SwarmAgent[] = t.console.storeAgents
+      .filter((a) => a.pricing === "free" || a.purchased)
+      .map((a) => ({
+        name: a.name,
+        role: a.role,
+        skills: a.skills
+      }));
+    // Deduplicate by name
+    const seen = new Set<string>();
+    return [...consoleAgents, ...ownedStoreAgents].filter((a) => {
+      if (seen.has(a.name)) return false;
+      seen.add(a.name);
+      return true;
+    });
+  }, [t.console.roles, t.console.storeAgents]);
+
+  const handleSaveSwarm = (swarm: Swarm) => {
+    setSwarms((prev) => {
+      const idx = prev.findIndex((s) => s.id === swarm.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = swarm;
+        return next;
+      }
+      return [swarm, ...prev];
+    });
+  };
+
+  const handleDeleteSwarm = (id: string) => {
+    setSwarms((prev) => prev.filter((s) => s.id !== id));
+  };
 
   const handleToggleFilter = (status: AgentStatus) => {
     setActiveFilters((prev: Set<AgentStatus>) => {
@@ -249,6 +290,12 @@ function App() {
         onSearchTermChange={setSearchTerm}
         onSelectAgent={(index) => setSelectedAgentIndex(index)}
         onNavigateSection={(section) => setConsoleSection(section)}
+        swarms={swarms}
+        selectedSwarmId={selectedSwarmId}
+        availableAgents={availableAgents}
+        onSelectSwarm={setSelectedSwarmId}
+        onSaveSwarm={handleSaveSwarm}
+        onDeleteSwarm={handleDeleteSwarm}
         onCreateWorkflow={() => navigate("/workflows/new")}
         onEditWorkflow={(index) => navigate(`/workflows/${index}/edit`)}
         onUseAgent={(index) => navigate(`/agents/${index}/edit`)}

@@ -305,6 +305,30 @@ export const content = {
           downloads: 5600
         }
       ],
+      swarm: {
+        headerLabel: "Swarm Console",
+        title: "Agent Swarm Orchestration",
+        subtitle: "Group your owned agents into collaborative swarms. Each swarm works together as a coordinated team.",
+        swarmCount: (n: number) => `${n} Swarm${n !== 1 ? "s" : ""}`,
+        availableAgentCount: (n: number) => `${n} Agent${n !== 1 ? "s" : ""} Available`,
+        createButton: "Create Swarm",
+        editButton: "Edit",
+        deleteButton: "Delete",
+        confirmDelete: "Remove this swarm?",
+        form: {
+          name: "Swarm Name",
+          namePlaceholder: "e.g. Engineering Team",
+          description: "Description",
+          descriptionPlaceholder: "What does this swarm do?",
+          agentsInSwarm: "Agents in Swarm",
+          availableAgents: "Available Agents",
+          noAgentsSelected: "No agents selected. Add agents from the available pool below.",
+          save: "Save Swarm",
+          cancel: "Cancel"
+        },
+        emptyState: "No swarms yet. Create your first agent swarm to get started.",
+        selectPrompt: "Select a swarm to view details, or create a new one."
+      },
       computeCenter: {
         headerLabel: "Compute Center",
         title: "Model Compute Infrastructure",
@@ -846,6 +870,30 @@ export const content = {
           downloads: 5600
         }
       ],
+      swarm: {
+        headerLabel: "Swarm 控制台",
+        title: "Agent 团体编排",
+        subtitle: "将你拥有的 Agent 组合成协作团体，协同完成复杂任务。",
+        swarmCount: (n: number) => `${n} 个团体`,
+        availableAgentCount: (n: number) => `${n} 个 Agent 可用`,
+        createButton: "创建团体",
+        editButton: "编辑",
+        deleteButton: "删除",
+        confirmDelete: "确认删除此团体？",
+        form: {
+          name: "团体名称",
+          namePlaceholder: "例如：研发部",
+          description: "描述",
+          descriptionPlaceholder: "这个团体负责什么工作？",
+          agentsInSwarm: "团体成员",
+          availableAgents: "可用 Agent",
+          noAgentsSelected: "尚未选择 Agent。从下方可用池中添加。",
+          save: "保存团体",
+          cancel: "取消"
+        },
+        emptyState: "尚无团体，点击创建第一个 Agent 团体。",
+        selectPrompt: "选择一个团体查看详情，或创建新团体。"
+      },
       computeCenter: {
         headerLabel: "算力中心",
         title: "模型算力基础设施",
