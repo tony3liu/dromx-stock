@@ -7,6 +7,7 @@ import AgentConsole from "./pages/AgentConsole";
 import LandingPage from "./pages/LandingPage";
 import SkillBuilderPage from "./pages/SkillBuilderPage";
 import SkillsCenterPage from "./pages/SkillsCenterPage";
+import SwarmCenterPage from "./pages/SwarmCenterPage";
 import WorkflowEditorPage from "./pages/WorkflowEditorPage";
 import RoleAgentsStore from "./pages/RoleAgentsStore";
 import { content, type Locale } from "./i18n/content";
@@ -18,6 +19,7 @@ type RouteState =
   | { path: "/agents" }
   | { path: "/console" }
   | { path: "/skills" }
+  | { path: "/swarms" }
   | { path: "/skills/new" }
   | { path: "/agents/new" }
   | { path: "/agents/:index/edit"; index: number }
@@ -30,6 +32,7 @@ type ConsoleSection = "agents" | "skills" | "workflows" | "computeCenter" | "swa
 function parseRoute(pathname: string): RouteState {
   if (pathname === "/console") return { path: "/console" };
   if (pathname === "/skills") return { path: "/skills" };
+  if (pathname === "/swarms") return { path: "/swarms" };
   if (pathname === "/agents") return { path: "/agents" };
   if (pathname === "/skills/new") return { path: "/skills/new" };
   if (pathname === "/agents/new") return { path: "/agents/new" };
@@ -60,7 +63,6 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [consoleSection, setConsoleSection] = useState<ConsoleSection>("agents");
   const [swarms, setSwarms] = useState<Swarm[]>(() => defaultSwarms);
-  const [selectedSwarmId, setSelectedSwarmId] = useState(defaultSwarms[0]?.id ?? "");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const t = content[locale];
@@ -106,6 +108,7 @@ function App() {
     <AppHeader
       navItems={[
         { label: t.nav.agents, path: "/agents", active: route.path === "/agents" },
+        { label: t.nav.swarms, path: "/swarms", active: route.path === "/swarms" },
         { label: t.nav.skills, path: "/skills", active: route.path === "/skills" }
       ]}
       rightAction={
@@ -291,9 +294,7 @@ function App() {
         onSelectAgent={(index) => setSelectedAgentIndex(index)}
         onNavigateSection={(section) => setConsoleSection(section)}
         swarms={swarms}
-        selectedSwarmId={selectedSwarmId}
         availableAgents={availableAgents}
-        onSelectSwarm={setSelectedSwarmId}
         onSaveSwarm={handleSaveSwarm}
         onDeleteSwarm={handleDeleteSwarm}
         onCreateWorkflow={() => navigate("/workflows/new")}
@@ -324,6 +325,21 @@ function App() {
           />
         </section>
       </main>
+    );
+  }
+
+  if (route.path === "/swarms") {
+    return (
+      <SwarmCenterPage
+        locale={locale}
+        nav={header}
+        swarms={swarms}
+        t={t}
+        onUseSwarm={() => {
+          navigate("/console");
+          setConsoleSection("swarm");
+        }}
+      />
     );
   }
 

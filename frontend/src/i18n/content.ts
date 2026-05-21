@@ -15,7 +15,7 @@ export type Locale = "en" | "zh";
 export const content = {
   en: {
     brand: "DromX",
-    nav: { agents: "Role Agents", skills: "Skills", console: "Console" },
+    nav: { agents: "Role Agents", skills: "Skills", swarms: "Swarms", console: "Console" },
     switchTo: "中文",
     heroEyebrow: "Digital labor network for the real world",
     heroTitle: "Infinite productivity for the world",
@@ -326,8 +326,7 @@ export const content = {
           save: "Save Swarm",
           cancel: "Cancel"
         },
-        emptyState: "No swarms yet. Create your first agent swarm to get started.",
-        selectPrompt: "Select a swarm to view details, or create a new one."
+        emptyState: "No swarms yet. Create your first agent swarm to get started."
       },
       computeCenter: {
         headerLabel: "Compute Center",
@@ -540,6 +539,17 @@ export const content = {
         }
       }
     },
+    swarmsCenter: {
+      title: "Swarms Center",
+      eyebrow: "Swarms Center",
+      description: "Browse and manage your assembled agent swarms. Each swarm is a hand-picked team ready to collaborate.",
+      searchPlaceholder: "Search swarms...",
+      swarmCount: (n: number) => `${n} Swarm${n !== 1 ? "s" : ""}`,
+      agentCount: (n: number) => `${n} Agent${n !== 1 ? "s" : ""}`,
+      useSwarm: "Use Swarm",
+      emptyState: "No swarms yet. Create your first swarm in the Console.",
+      agents: "Agents"
+    },
     platformLayers: [
       {
         icon: BrainCircuit,
@@ -587,7 +597,7 @@ export const content = {
   },
   zh: {
     brand: "DromX",
-    nav: { agents: "角色 Agent", skills: "技能中心", console: "控制台" },
+    nav: { agents: "角色 Agent", skills: "技能中心", swarms: "Swarm 中心", console: "控制台" },
     switchTo: "EN",
     heroEyebrow: "面向现实世界的数字劳动力网络",
     heroTitle: "让世界拥有无限生产力",
@@ -891,8 +901,7 @@ export const content = {
           save: "保存团体",
           cancel: "取消"
         },
-        emptyState: "尚无团体，点击创建第一个 Agent 团体。",
-        selectPrompt: "选择一个团体查看详情，或创建新团体。"
+        emptyState: "尚无团体，点击创建第一个 Agent 团体。"
       },
       computeCenter: {
         headerLabel: "算力中心",
@@ -1104,6 +1113,17 @@ export const content = {
           publisher: "我"
         }
       }
+    },
+    swarmsCenter: {
+      title: "Swarm 中心",
+      eyebrow: "Swarm 中心",
+      description: "浏览和管理你组装的 Agent 团体。每个团体都是精心搭配、可协同工作的团队。",
+      searchPlaceholder: "搜索团体...",
+      swarmCount: (n: number) => `${n} 个团体`,
+      agentCount: (n: number) => `${n} 个 Agent`,
+      useSwarm: "使用团体",
+      emptyState: "尚无团体，前往控制台创建你的第一个 Agent 团体。",
+      agents: "成员 Agent"
     },
     platformLayers: [
       {

@@ -44,6 +44,17 @@ describe("landing page", () => {
     expect(screen.getByRole("heading", { name: /Skills Center/i })).toBeInTheDocument();
   });
 
+  it("opens the swarms center from the shared navigation", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    render(<App />);
+
+    await clickPrimaryNav(user, /Swarms/i);
+
+    expect(window.location.pathname).toBe("/swarms");
+    expect(screen.getByRole("heading", { name: /Swarms Center/i })).toBeInTheDocument();
+  });
+
   it("opens the skill builder from the console skills workbench", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);

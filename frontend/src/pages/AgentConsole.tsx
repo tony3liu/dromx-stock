@@ -46,9 +46,7 @@ type AgentConsoleProps = {
   onSubmitSkillReview: () => void;
   onPublishSkill: () => void;
   swarms: Swarm[];
-  selectedSwarmId: string;
   availableAgents: SwarmAgent[];
-  onSelectSwarm: (id: string) => void;
   onSaveSwarm: (swarm: Swarm) => void;
   onDeleteSwarm: (id: string) => void;
 };
@@ -87,9 +85,7 @@ function AgentConsole({
   onSubmitSkillReview,
   onPublishSkill,
   swarms,
-  selectedSwarmId,
   availableAgents,
-  onSelectSwarm,
   onSaveSwarm,
   onDeleteSwarm
 }: AgentConsoleProps) {
@@ -168,9 +164,7 @@ function AgentConsole({
             locale={locale}
             t={t}
             swarms={swarms}
-            selectedSwarmId={selectedSwarmId}
             availableAgents={availableAgents}
-            onSelectSwarm={onSelectSwarm}
             onSaveSwarm={onSaveSwarm}
             onDeleteSwarm={onDeleteSwarm}
           />
