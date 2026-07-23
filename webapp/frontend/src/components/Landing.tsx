@@ -73,7 +73,7 @@ function Nav({ onEnter }: { onEnter: () => void }) {
   return (
     <div className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-canvas)]/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-3.5">
-        <LogoLockup size={28} />
+        <LogoLockup size={44} />
         <div className="hidden items-center gap-7 text-sm text-[var(--color-ink-soft)] md:flex">
           <a href="#lifecycle" className="transition-colors hover:text-[var(--color-brand)]">工作流</a>
           <a href="#screener" className="transition-colors hover:text-[var(--color-brand)]">选股</a>

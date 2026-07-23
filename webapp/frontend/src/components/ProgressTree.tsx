@@ -1,5 +1,6 @@
 import { Check, Loader2 } from "lucide-react";
 import { cn } from "../lib/format";
+import { NODE_CN } from "../lib/nodes";
 import type { NodeStatus } from "../hooks/useRunStream";
 
 // Pipeline nodes grouped by team for a readable progress tree.
@@ -15,28 +16,6 @@ const GROUPS: { team: string; nodes: string[] }[] = [
   { team: "Risk", nodes: ["Reward Specialist", "Tail Risk Specialist", "Regime Risk Specialist", "Risk Consensus"] },
   { team: "Forecast & Decision", nodes: ["Forecast Synthesizer", "Portfolio Manager"] },
 ];
-
-const NODE_CN: Record<string, string> = {
-  "Regime Analyst": "市场状态",
-  "Market Analyst": "技术面",
-  "Sentiment Analyst": "情绪面",
-  "News Analyst": "新闻宏观",
-  "Fundamentals Analyst": "基本面",
-  "Industry Analyst": "行业链",
-  "Signal Aggregator": "信号融合",
-  "Event Impact": "事件冲击",
-  "Key Question": "关键问题",
-  "Growth Analyst": "增长质量",
-  "Risk Analyst": "估值风险",
-  "Research Manager": "研究综合",
-  Trader: "交易方案",
-  "Reward Specialist": "收益专家",
-  "Tail Risk Specialist": "尾部风险",
-  "Regime Risk Specialist": "环境风险",
-  "Risk Consensus": "风险共识",
-  "Forecast Synthesizer": "时间轴预测",
-  "Portfolio Manager": "最终决策",
-};
 
 function Dot({ status }: { status: NodeStatus }) {
   if (status === "done")

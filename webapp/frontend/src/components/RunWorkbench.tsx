@@ -13,6 +13,7 @@ import { ResearchPanel } from "./ResearchPanel";
 import { SizingPanel } from "./SizingPanel";
 import { FactorPanel } from "./FactorPanel";
 import { QAPanel } from "./QAPanel";
+import { DromyAgent } from "./DromyAgent";
 import { REPORT_SECTIONS, SECTION_CN } from "../api/types";
 import { api } from "../api/client";
 import { buildReportMarkdown, copyText, downloadText } from "../lib/export";
@@ -420,6 +421,14 @@ export function RunWorkbench({ runId, ticker, onOpenRun, onStatusSettled }: { ru
       </div>
 
       {s.complete && <QAPanel runId={runId} />}
+
+      <DromyAgent
+        nodeStatus={s.nodeStatus}
+        running={running}
+        complete={s.complete}
+        error={s.error}
+        rating={s.rating}
+      />
     </div>
   );
 }

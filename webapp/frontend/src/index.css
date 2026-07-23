@@ -302,7 +302,8 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; filter: none; transition: none; }
   .marquee, .float-slow, .pulse-brand, .animate-pop, .breathe, .text-flow,
-  .animate-float, .animate-pulse-glow, .animate-gradient { animation: none; }
+  .animate-float, .animate-pulse-glow, .animate-gradient,
+  .animate-agent-float, .animate-agent-wander, .animate-bubble-pop { animation: none; }
   .text-flow { color: var(--color-brand-dark); background: none; }
   .page-enter, .stagger > *, .stagger-fade > * { animation: none; }
 }
@@ -372,3 +373,25 @@ select.sel {
   background-position: right 0.6rem center;
   padding-right: 1.9rem;
 }
+
+/* ─── Dromy Agent — live analysis companion animations ─────────────────── */
+@keyframes agent-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+}
+.animate-agent-float { animation: agent-float 2.8s ease-in-out infinite; }
+
+@keyframes agent-wander {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-8px, -4px); }
+  40% { transform: translate(8px, -10px); }
+  60% { transform: translate(-6px, 4px); }
+  80% { transform: translate(4px, -6px); }
+}
+.animate-agent-wander { animation: agent-wander 12s ease-in-out infinite; }
+
+@keyframes bubble-pop {
+  0% { opacity: 0; transform: scale(0.92) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-bubble-pop { animation: bubble-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
