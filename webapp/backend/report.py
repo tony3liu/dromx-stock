@@ -27,10 +27,10 @@ from datetime import datetime, timezone
 
 import markdown as md_lib
 
-from tradingagents.agents.utils.agent_utils import get_language_instruction
+from dromx.agents.utils.agent_utils import get_language_instruction
 from webapp.backend import store
 
-logger = logging.getLogger("tradingagents.web.report")
+logger = logging.getLogger("dromx.web.report")
 
 # Bump when the synthesis prompt / pipeline changes so previously-cached
 # (and shallower) reports are regenerated on the next export instead of
@@ -259,7 +259,7 @@ def render_html(markdown_text: str, *, ticker: str, trade_date: str, rating: str
 <link href="{_FONTS}" rel="stylesheet">
 <style>{_CSS}</style></head><body>
 <section class="cover">
-  <div class="eyebrow">TradingAgents · 综合投研报告</div>
+  <div class="eyebrow">DromX · 综合投研报告</div>
   <h1>{ticker}</h1>
   <div class="sub">多智能体 AI 深度分析 · 综合研报</div>
   <div class="meta">
@@ -269,7 +269,7 @@ def render_html(markdown_text: str, *, ticker: str, trade_date: str, rating: str
   </div>
 </section>
 <main>{body}
-  <div class="footer">本报告由 TradingAgents 多智能体系统基于公开免费数据自动生成，仅供研究参考，不构成投资建议。生成于 {stamp}。</div>
+  <div class="footer">本报告由 DromX 多智能体系统基于公开免费数据自动生成，仅供研究参考，不构成投资建议。生成于 {stamp}。</div>
 </main>
 </body></html>"""
 

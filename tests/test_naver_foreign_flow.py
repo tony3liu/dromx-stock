@@ -7,8 +7,8 @@ consecutive-sell days even if the prior 22 were all sells.
 
 from __future__ import annotations
 
-import tradingagents.dataflows.naver as nv
-from tradingagents.dataflows.naver import build_foreign_flow
+import dromx.dataflows.naver as nv
+from dromx.dataflows.naver import build_foreign_flow
 
 
 _HTML = """

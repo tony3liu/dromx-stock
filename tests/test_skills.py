@@ -1,14 +1,14 @@
 """Tests for the v0.4 skill system (loader / selector / injector).
 
 Built-in skills ship inside the package, so these run without any user
-``~/.tradingagents/skills/`` directory. Hermes-format frontmatter (YAML +
+``~/.dromx/skills/`` directory. Hermes-format frontmatter (YAML +
 Markdown body) must round-trip; cross-analyst mounting (``analyst: [a, b]``)
 and the instrument/regime/market filter axes are the core behaviours.
 """
 
 from __future__ import annotations
 
-from tradingagents.agents.utils.skills import (
+from dromx.agents.utils.skills import (
     SkillInjector,
     SkillLoader,
     SkillSelector,
@@ -24,7 +24,7 @@ _TEN = [
 
 def _loader():
     return SkillLoader({"skills": {
-        "enabled": True, "path": "~/.tradingagents/skills/",
+        "enabled": True, "path": "~/.dromx/skills/",
         "max_per_analyst": 5, "auto_load": True,
     }})
 

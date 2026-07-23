@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dromx"
 version = "0.3.0"
-description = "TradingAgents: Multi-Agents LLM Financial Trading Framework"
+description = "DromX: Multi-Agents LLM Financial Trading Framework"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -41,12 +41,12 @@ dev = [
     "pytest-subtests>=0.13",
 ]
 # Amazon Bedrock support (AWS SigV4 auth + boto3). Optional so the core install
-# stays lean: pip install "tradingagents[bedrock]".
+# stays lean: pip install "dromx[bedrock]".
 bedrock = [
     "langchain-aws>=1.5.0",
 ]
 # Web application layer (webapp/backend): FastAPI + SSE over the engine. Optional
-# so the core/CLI install stays lean: pip install "tradingagents[web]".
+# so the core/CLI install stays lean: pip install "dromx[web]".
 web = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
@@ -55,14 +55,14 @@ web = [
 ]
 
 [project.scripts]
-tradingagents = "cli.main:app"
+dromx = "cli.main:app"
 
 [tool.setuptools.packages.find]
-include = ["tradingagents*", "cli*"]
+include = ["dromx*", "cli*"]
 
 [tool.setuptools.package-data]
 cli = ["static/*"]
-tradingagents = ["agents/utils/skills/builtin/**/*.md"]
+dromx = ["agents/utils/skills/builtin/**/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

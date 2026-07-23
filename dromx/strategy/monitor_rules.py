@@ -10,7 +10,7 @@ A monitor rule declares WHAT to watch and HOW to alert. Adapted from TickFlow's
 Dropped from TickFlow (out of V1 scope): "market" (index moves, V2), "ladder"
 (A-share limit-up seal monitoring).
 
-Rules persist one-JSON-per-file under ``~/.tradingagents/monitor_rules/`` (mirrors
+Rules persist one-JSON-per-file under ``~/.dromx/monitor_rules/`` (mirrors
 store.py's single-file, no-database approach). The condition field whitelist is
 the set of columns the strategy DataAdapter produces, so a rule can only ever
 reference a field the monitor engine can actually evaluate.
@@ -26,7 +26,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-_RULES_DIR = Path(os.path.expanduser("~")) / ".tradingagents" / "monitor_rules"
+_RULES_DIR = Path(os.path.expanduser("~")) / ".dromx" / "monitor_rules"
 
 ID_RE = re.compile(r"^[a-z0-9_]{1,40}$")
 RULE_TYPES = {"price", "signal", "strategy"}

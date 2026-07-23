@@ -57,8 +57,8 @@ def _returns(symbol: str, curr_date: str, lookback: int):
     """
     from datetime import datetime, timedelta
 
-    from tradingagents.dataflows.errors import NoMarketDataError
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.errors import NoMarketDataError
+    from dromx.dataflows.stockstats_utils import load_ohlcv
 
     try:
         df = load_ohlcv(symbol, curr_date)

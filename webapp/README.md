@@ -1,7 +1,7 @@
-# TradingAgents Web
+# DromX Web
 
-Web application layer over the TradingAgents engine. **Read-only** over the
-engine (imports `TradingAgentsGraph` etc.; never modifies `tradingagents/`).
+Web application layer over the DromX engine. **Read-only** over the
+engine (imports `DromXGraph` etc.; never modifies `dromx/`).
 
 ## Architecture
 
@@ -12,7 +12,7 @@ webapp/
 └── frontend/  Vite + React + TS + Tailwind — ZA-Bank-style light UI
 ```
 
-Runs are persisted as JSON under `~/.tradingagents/web_runs/<id>.json`
+Runs are persisted as JSON under `~/.dromx/web_runs/<id>.json`
 (metadata + the engine's `final_state` = the 14+ markdown report sections).
 
 ## Backend
@@ -20,8 +20,8 @@ Runs are persisted as JSON under `~/.tradingagents/web_runs/<id>.json`
 Install web deps into the engine's env, then run uvicorn:
 
 ```bash
-conda run -n tradingagents pip install -e ".[web]"   # or: pip install fastapi "uvicorn[standard]" sse-starlette
-conda run -n tradingagents uvicorn webapp.backend.main:app --host 127.0.0.1 --port 8077 --log-level info
+conda run -n dromx pip install -e ".[web]"   # or: pip install fastapi "uvicorn[standard]" sse-starlette
+conda run -n dromx uvicorn webapp.backend.main:app --host 127.0.0.1 --port 8077 --log-level info
 ```
 
 The backend logs at INFO: a startup banner, and one line per pipeline node as it
@@ -48,14 +48,14 @@ the API only overrides ticker/date/analysts/depth per run.
 
 ### Optional password login
 
-Set `TRADINGAGENTS_WEB_PASSWORD` to require a single shared password. When set,
+Set `DROMX_WEB_PASSWORD` to require a single shared password. When set,
 all `/api/runs*`, `/api/price*` and Q&A routes need a bearer token from
 `POST /api/login` (the frontend shows a login page and stores the token). The
 token is HMAC-signed with the password and expires after a week — no database,
 no user accounts. **Unset (default) = open access**, unchanged local experience.
 
 ```bash
-TRADINGAGENTS_WEB_PASSWORD=yourpass conda run -n tradingagents \
+DROMX_WEB_PASSWORD=yourpass conda run -n dromx \
   uvicorn webapp.backend.main:app --port 8077 --log-level info
 ```
 

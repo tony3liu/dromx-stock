@@ -6,7 +6,7 @@ lens and stops. Risk Consensus reads all three risk reports and reconciles one
 stop framework; the Portfolio Manager decides. Multi-angle, no persuasion.
 """
 
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,
@@ -54,12 +54,12 @@ Ground your case quantitatively, not rhetorically. Read the ATR / volatility fig
             prompt += f"\n\n**User's current position (for position_simulate):**\n{pos}"
         prompt += get_language_instruction()
 
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         agent_cfg = (get_config().get("agent_loop") or {})
         if bool(agent_cfg.get("enabled", False)):
-            from tradingagents.agents.utils.agent_loop import build_analyst_react_invoker
-            from tradingagents.agents.utils.agent_utils import get_stock_data
-            from tradingagents.agents.managers.portfolio_manager import position_simulate
+            from dromx.agents.utils.agent_loop import build_analyst_react_invoker
+            from dromx.agents.utils.agent_utils import get_stock_data
+            from dromx.agents.managers.portfolio_manager import position_simulate
             report = build_analyst_react_invoker(
                 llm=llm, tools=[get_stock_data, position_simulate],
                 schema=None, render=lambda c: c,

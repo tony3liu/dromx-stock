@@ -1,8 +1,8 @@
-# TradingAgents/graph/propagation.py
+# DromX/graph/propagation.py
 
 from typing import Any
 
-from tradingagents.agents.utils.agent_states import (
+from dromx.agents.utils.agent_states import (
     InvestDebateState,
     RiskDebateState,
 )
@@ -35,7 +35,7 @@ class Propagator:
 
         ``instrument_context`` is the deterministic ticker-identity string
         resolved once at run start (see
-        ``TradingAgentsGraph.resolve_instrument_context``). When empty, agents
+        ``DromXGraph.resolve_instrument_context``). When empty, agents
         fall back to ticker-only context via
         ``get_instrument_context_from_state``. ``portfolio_context`` is the
         pre-trade holdings-interaction block (empty when no holdings configured).

@@ -15,9 +15,9 @@ A skill file is Markdown with a YAML frontmatter block:
     # Markdown body: When to Apply / Procedure / Pitfalls / Output
 
 Skills come from two places:
-  - Built-in: ``tradingagents/agents/utils/skills/builtin/{analyst}/{name}.md``
+  - Built-in: ``dromx/agents/utils/skills/builtin/{analyst}/{name}.md``
     (shipped with the package as package-data).
-  - User: ``~/.tradingagents/skills/{analyst}/{name}.md`` (config ``skills.path``).
+  - User: ``~/.dromx/skills/{analyst}/{name}.md`` (config ``skills.path``).
 
 User skills override built-in skills of the same name. Per-file try/except: a
 malformed skill is skipped + warned, never blocks a run. When ``skills.enabled``
@@ -129,7 +129,7 @@ class SkillLoader:
     def __init__(self, config: dict | None = None):
         cfg = (config or {}).get("skills", {}) or {}
         self._enabled = bool(cfg.get("enabled", True))
-        user_path = cfg.get("path", "~/.tradingagents/skills/")
+        user_path = cfg.get("path", "~/.dromx/skills/")
         self._user_path = Path(os.path.expanduser(user_path))
         self._cache: dict[str, list[Skill]] | None = None
         self._by_name: dict[str, Skill] | None = None

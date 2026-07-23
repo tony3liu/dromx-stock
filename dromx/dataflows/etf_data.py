@@ -38,7 +38,7 @@ def _returns(symbol: str, curr_date: str, lookback: int = 60):
 
     Returns a pandas Series indexed by date, or None on any failure.
     """
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
 
     df = load_ohlcv(symbol, curr_date)
     if df is None or df.empty or "Close" not in df.columns:
@@ -61,7 +61,7 @@ def _quote_currency(ticker: str) -> str | None:
     Returns None for markets we don't map.
     """
     def fetch():
-        from tradingagents.dataflows.tencent import _classify
+        from dromx.dataflows.tencent import _classify
 
         market, _code = _classify(ticker)
         return {"us": "USD", "hk": "HKD", "cn": "CNY"}.get(market)
@@ -74,7 +74,7 @@ def _tencent_name(ticker: str) -> str | None:
     def fetch():
         import requests
 
-        from tradingagents.dataflows.tencent import _tencent_code
+        from dromx.dataflows.tencent import _tencent_code
 
         code, _market = _tencent_code(ticker)
         r = requests.get(
@@ -101,7 +101,7 @@ def _sina_name(ticker: str) -> str | None:
 
         import requests
 
-        from tradingagents.dataflows.tencent import _classify
+        from dromx.dataflows.tencent import _classify
 
         market, _code = _classify(ticker)
         base = ticker.strip().upper().split(".")[0]
@@ -139,7 +139,7 @@ def _yf_fund_fields(ticker: str) -> dict:
     def fetch():
         import yfinance as yf
 
-        from tradingagents.dataflows.symbol_utils import normalize_symbol
+        from dromx.dataflows.symbol_utils import normalize_symbol
 
         info = yf.Ticker(normalize_symbol(ticker)).info or {}
         return {

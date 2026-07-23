@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tradingagents.agents import schemas as S
+from dromx.agents import schemas as S
 
 
 # --------------------------------------------------------------------------- #
@@ -60,7 +60,7 @@ BASE_STATE = {
 
 @pytest.mark.unit
 def test_key_question_node_writes_rendered_report():
-    from tradingagents.agents.analysts.key_question import create_key_question_analyst
+    from dromx.agents.analysts.key_question import create_key_question_analyst
 
     report = S.KeyQuestionReport(
         key_questions=[S.KeyQuestion(question="Q?", why_it_matters="w", what_would_answer_it="a")],
@@ -75,7 +75,7 @@ def test_key_question_node_writes_rendered_report():
 
 @pytest.mark.unit
 def test_event_impact_node_writes_rendered_report():
-    from tradingagents.agents.analysts.event_impact import create_event_impact_assessor
+    from dromx.agents.analysts.event_impact import create_event_impact_assessor
 
     report = S.EventImpactReport(
         impact_score=8, affected_dimensions=["fundamentals: dilution"],
@@ -90,7 +90,7 @@ def test_event_impact_node_writes_rendered_report():
 
 @pytest.mark.unit
 def test_forecast_node_writes_rendered_report():
-    from tradingagents.agents.analysts.forecast_synthesizer import create_forecast_synthesizer
+    from dromx.agents.analysts.forecast_synthesizer import create_forecast_synthesizer
 
     report = S.ForecastReport(
         horizons=[
@@ -114,7 +114,7 @@ def test_forecast_node_writes_rendered_report():
 
 @pytest.mark.unit
 def test_signal_aggregator_node_fuses_reports():
-    from tradingagents.agents.analysts.signal_aggregator import create_signal_aggregator
+    from dromx.agents.analysts.signal_aggregator import create_signal_aggregator
 
     node = create_signal_aggregator()  # no LLM
     out = node(dict(BASE_STATE))
@@ -130,7 +130,7 @@ def test_signal_aggregator_node_fuses_reports():
 
 @pytest.mark.unit
 def test_regime_node_writes_report(monkeypatch):
-    import tradingagents.agents.analysts.regime_analyst as mod
+    import dromx.agents.analysts.regime_analyst as mod
 
     monkeypatch.setattr(mod, "build_verified_market_snapshot",
                         lambda *a, **k: "SNAPSHOT: close 100, ATR 5, RSI 55")
@@ -146,7 +146,7 @@ def test_regime_node_writes_report(monkeypatch):
 
 @pytest.mark.unit
 def test_market_node_writes_report(monkeypatch):
-    import tradingagents.agents.analysts.market_analyst as mod
+    import dromx.agents.analysts.market_analyst as mod
 
     # market analyst pre-fetches the verified snapshot (a langchain @tool → .func)
     monkeypatch.setattr(mod.get_verified_market_snapshot, "func",
@@ -164,7 +164,7 @@ def test_market_node_writes_report(monkeypatch):
 
 @pytest.mark.unit
 def test_news_node_writes_report(monkeypatch):
-    import tradingagents.agents.analysts.news_analyst as mod
+    import dromx.agents.analysts.news_analyst as mod
 
     monkeypatch.setattr(mod.get_news, "func", lambda *a, **k: "### [2026-06-24] headline (source: X)", raising=False)
     monkeypatch.setattr(mod.get_global_news, "func", lambda *a, **k: "global news", raising=False)
@@ -182,7 +182,7 @@ def test_news_node_writes_report(monkeypatch):
 
 @pytest.mark.unit
 def test_fundamentals_node_writes_report(monkeypatch):
-    import tradingagents.agents.analysts.fundamentals_analyst as mod
+    import dromx.agents.analysts.fundamentals_analyst as mod
 
     for name in ("get_fundamentals", "get_balance_sheet", "get_income_statement", "get_cashflow"):
         monkeypatch.setattr(getattr(mod, name), "func", lambda *a, **k: "financial block", raising=False)
@@ -198,7 +198,7 @@ def test_fundamentals_node_writes_report(monkeypatch):
 
 @pytest.mark.unit
 def test_industry_node_writes_report(monkeypatch):
-    import tradingagents.agents.analysts.industry_analyst as mod
+    import dromx.agents.analysts.industry_analyst as mod
 
     monkeypatch.setattr(mod, "resolve_instrument_identity", lambda *a, **k: {"sector": "Tech", "industry": "Semis"})
     monkeypatch.setattr(mod.get_global_news, "func", lambda *a, **k: "sector news", raising=False)

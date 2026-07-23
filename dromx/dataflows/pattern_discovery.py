@@ -53,7 +53,7 @@ def _safe(fn, default=None):
 
 def _load_ohlcv_history(ticker: str, curr_date: str):
     """Full OHLCV history ≤ curr_date — full history so MA100 is computable."""
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
     import pandas as pd
 
     df = load_ohlcv(ticker, curr_date)
@@ -146,7 +146,7 @@ def _fmt_date(ts) -> str:
 def build_pattern_discovery(ticker: str, curr_date, config: dict | None = None) -> str:
     """Render the forensics discovery block, or '' when nothing anomalous."""
     if config is None:
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         config = get_config()
 
     df = _safe(lambda: _load_ohlcv_history(ticker, str(curr_date)))

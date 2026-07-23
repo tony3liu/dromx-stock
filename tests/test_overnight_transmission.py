@@ -7,8 +7,8 @@ they run offline and exercise the render + degradation logic only.
 
 from __future__ import annotations
 
-import tradingagents.dataflows.overnight_transmission as ot
-from tradingagents.dataflows.overnight_transmission import build_overnight_transmission
+import dromx.dataflows.overnight_transmission as ot
+from dromx.dataflows.overnight_transmission import build_overnight_transmission
 
 
 class _FakeStructure:
@@ -29,7 +29,7 @@ class _FakeStructure:
 def _patch(monkeypatch, *, structure=None, link=None, und_1d=None,
            ref_1d=None, prev_close=None):
     """Replace every network/LLM touchpoint in the builder with fixed values."""
-    import tradingagents.dataflows.etf_data as etf_data
+    import dromx.dataflows.etf_data as etf_data
 
     if structure is not None:
         monkeypatch.setattr(etf_data, "resolve_etf_structure",
@@ -154,7 +154,7 @@ def test_inverse_etf_direction_sign(monkeypatch):
 
 def test_reporting_includes_overnight_section(tmp_path):
     """The report tree renders the 0.7 section + drops a standalone .md."""
-    from tradingagents.reporting import write_report_tree
+    from dromx.reporting import write_report_tree
 
     final_state = {
         "overnight_transmission": "## 隔夜传导\n- test chain content\n",
@@ -168,7 +168,7 @@ def test_reporting_includes_overnight_section(tmp_path):
 
 def test_reporting_omits_section_when_empty(tmp_path):
     """No overnight_transmission in state → no section, no file (additive)."""
-    from tradingagents.reporting import write_report_tree
+    from dromx.reporting import write_report_tree
 
     out = write_report_tree({}, "AAPL", tmp_path)
     text = out.read_text(encoding="utf-8")
@@ -208,7 +208,7 @@ def test_no_reversal_when_close_strong(monkeypatch):
 
 
 def test_premarket_call_card_extracts_overnight_and_decision():
-    from tradingagents.reporting import _premarket_call_card
+    from dromx.reporting import _premarket_call_card
 
     state = {
         "overnight_transmission": (
@@ -228,13 +228,13 @@ def test_premarket_call_card_extracts_overnight_and_decision():
 
 
 def test_premarket_call_card_empty_when_nothing():
-    from tradingagents.reporting import _premarket_call_card
+    from dromx.reporting import _premarket_call_card
     assert _premarket_call_card({}) == ""
 
 
 def test_reporting_premarket_card_sits_at_top(tmp_path):
     """The card sits above the regime section in the consolidated report."""
-    from tradingagents.reporting import write_report_tree
+    from dromx.reporting import write_report_tree
 
     final_state = {
         "regime_report": "**市场状态：** Uptrend",

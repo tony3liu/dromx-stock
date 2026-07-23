@@ -16,13 +16,13 @@ question instead of arguing every lens evenly.
 
 from __future__ import annotations
 
-from tradingagents.agents.schemas import KeyQuestionReport, render_key_question_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import KeyQuestionReport, render_key_question_report
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )

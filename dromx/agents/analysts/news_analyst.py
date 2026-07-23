@@ -16,8 +16,8 @@ import re
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from tradingagents.agents.schemas import NewsReport, render_news_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import NewsReport, render_news_report
+from dromx.agents.utils.agent_utils import (
     get_global_news,
     get_instrument_context_from_state,
     get_language_instruction,
@@ -29,7 +29,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_regime_context_from_state,
     get_source_freshness_discipline,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -94,7 +94,7 @@ def _maybe_enrich_with_articles(news_block: str) -> str:
     at worst unchanged — never blocks the pipeline.
     """
     try:
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
 
         if not get_config().get("enable_browser"):
             return news_block
@@ -106,7 +106,7 @@ def _maybe_enrich_with_articles(news_block: str) -> str:
         return news_block
 
     try:
-        from tradingagents.browser import read_article
+        from dromx.browser import read_article
     except Exception:  # noqa: BLE001 — module import shouldn't ever block news
         return news_block
 
@@ -156,7 +156,7 @@ def create_news_analyst(llm):
         )
 
         # v0.4 agentic pipeline: agent loop with tools + skills, or v0.3 single call.
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         cfg = get_config()
         agent_cfg = cfg.get("agent_loop") or {}
         per_analyst = (agent_cfg.get("per_analyst") or {}).get("news", {}) or {}
@@ -212,15 +212,15 @@ def _extract_market(ticker: str) -> str:
 
 def _run_news_agent_loop(*, llm, cfg, state, ticker, curr_date, system_message):
     """v0.4 path: react agent with news tools + skills; falls back to v0.3 on any failure."""
-    from tradingagents.agents.schemas import orchestrator_skills_for
-    from tradingagents.agents.utils.agent_loop import build_analyst_react_invoker
-    from tradingagents.agents.utils.skills import SkillLoader, SkillSelector
-    from tradingagents.agents.utils.skills.request_tool import make_request_skill_tool
+    from dromx.agents.schemas import orchestrator_skills_for
+    from dromx.agents.utils.agent_loop import build_analyst_react_invoker
+    from dromx.agents.utils.skills import SkillLoader, SkillSelector
+    from dromx.agents.utils.skills.request_tool import make_request_skill_tool
 
     # Tools the loop can call to verify / deepen claims not grounded in the
     # pre-fetched blocks. The pre-fetch stays (seeds the prompt) so the loop
     # doesn't waste turns re-fetching the baseline.
-    from tradingagents.agents.utils.browser_tools import web_read, web_search
+    from dromx.agents.utils.browser_tools import web_read, web_search
     tools = [
         get_news,
         get_global_news,

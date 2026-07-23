@@ -10,12 +10,12 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import tradingagents.agents.analysts.news_analyst as na
-import tradingagents.agents.utils.agent_loop as al
-from tradingagents.dataflows.config import set_config
-from tradingagents.default_config import DEFAULT_CONFIG
-from tradingagents.graph.conditional_logic import ConditionalLogic
-from tradingagents.graph.setup import GraphSetup
+import dromx.agents.analysts.news_analyst as na
+import dromx.agents.utils.agent_loop as al
+from dromx.dataflows.config import set_config
+from dromx.default_config import DEFAULT_CONFIG
+from dromx.graph.conditional_logic import ConditionalLogic
+from dromx.graph.setup import GraphSetup
 
 _ALL = ("market", "social", "news", "fundamentals", "industry")
 

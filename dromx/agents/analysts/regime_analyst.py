@@ -22,17 +22,17 @@ import logging
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from tradingagents.agents.schemas import RegimeReport, render_regime_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import RegimeReport, render_regime_report
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
-from tradingagents.dataflows.config import get_config
-from tradingagents.dataflows.market_data_validator import build_verified_market_snapshot
+from dromx.dataflows.config import get_config
+from dromx.dataflows.market_data_validator import build_verified_market_snapshot
 
 logger = logging.getLogger(__name__)
 

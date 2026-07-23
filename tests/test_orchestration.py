@@ -7,8 +7,8 @@ whether to noop, so it must round-trip the renderer exactly — including the
 
 from __future__ import annotations
 
-from tradingagents.agents.analysts.orchestrator import _ALL_KEYS, _force_all_plan
-from tradingagents.agents.schemas import (
+from dromx.agents.analysts.orchestrator import _ALL_KEYS, _force_all_plan
+from dromx.agents.schemas import (
     OrchestrationPlan,
     orchestrator_skills_for,
     render_orchestration_plan,

@@ -1,8 +1,8 @@
 """
-FastAPI app exposing the TradingAgents engine over HTTP + SSE.
+FastAPI app exposing the DromX engine over HTTP + SSE.
 
-Read-only over the engine: it imports TradingAgentsGraph / summarize_state /
-answer_question and never modifies tradingagents/. Endpoints:
+Read-only over the engine: it imports DromXGraph / summarize_state /
+answer_question and never modifies dromx/. Endpoints:
 
   POST /api/runs              create + start an analysis (returns run_id)
   GET  /api/runs/{id}/stream  SSE: live node/section events until complete
@@ -14,7 +14,7 @@ answer_question and never modifies tradingagents/. Endpoints:
 
 from __future__ import annotations
 
-# Load .env (TRADINGAGENTS_OUTPUT_LANGUAGE=中文 etc.) BEFORE any tradingagents
+# Load .env (DROMX_OUTPUT_LANGUAGE=中文 etc.) BEFORE any dromx
 # import — _apply_env_overrides runs at default_config import time and reads
 # os.environ, so without this the webapp defaults to English output.
 from dotenv import load_dotenv
@@ -45,11 +45,11 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     force=True,  # take over even if uvicorn already configured the root logger
 )
-logger = logging.getLogger("tradingagents.web")
+logger = logging.getLogger("dromx.web")
 
 # Surface the analysis-runner's per-section progress on its OWN stderr handler,
 # independent of the root logger. uvicorn reconfigures the root logger after
-# import, so basicConfig(force=True) alone isn't enough to keep tradingagents.*
+# import, so basicConfig(force=True) alone isn't enough to keep dromx.*
 # INFO visible. With this, runner.py's "run {id} ✓ market_report (120s, 3500
 # chars)" lands in the uvicorn console the moment each section completes — the
 # quickest way to judge a run while testing.
@@ -57,17 +57,17 @@ import sys as _sys
 _ta_handler = logging.StreamHandler(_sys.stderr)
 _ta_handler.setFormatter(logging.Formatter(
     "%(asctime)s %(levelname)s [%(name)s] %(message)s", datefmt="%H:%M:%S"))
-_ta_root = logging.getLogger("tradingagents")
+_ta_root = logging.getLogger("dromx")
 _ta_root.setLevel(logging.INFO)
 _ta_root.addHandler(_ta_handler)
 _ta_root.propagate = False  # don't double-emit via the root (uvicorn) handler
 
-app = FastAPI(title="TradingAgents Web", version="0.1.0")
+app = FastAPI(title="DromX Web", version="0.1.0")
 
 
 @app.on_event("startup")
 def _startup_banner() -> None:
-    logger.info("TradingAgents Web backend up — POST /api/runs to start; "
+    logger.info("DromX Web backend up — POST /api/runs to start; "
                 "GET /api/runs/{id}/stream for live SSE. Logs at INFO.")
     logger.info("Auth: %s", "ENABLED (password login required)"
                 if auth.auth_enabled() else "disabled (open access)")
@@ -120,10 +120,10 @@ _report_llm = None
 def _get_qa_llm():
     global _qa_llm
     if _qa_llm is None:
-        from tradingagents.default_config import DEFAULT_CONFIG
-        from tradingagents.graph.trading_graph import TradingAgentsGraph
+        from dromx.default_config import DEFAULT_CONFIG
+        from dromx.graph.trading_graph import DromXGraph
 
-        _qa_llm = TradingAgentsGraph(config=DEFAULT_CONFIG.copy()).quick_thinking_llm
+        _qa_llm = DromXGraph(config=DEFAULT_CONFIG.copy()).quick_thinking_llm
     return _qa_llm
 
 
@@ -131,10 +131,10 @@ def _get_report_llm():
     """Deep-thinking LLM for the comprehensive report (depth > speed here)."""
     global _report_llm
     if _report_llm is None:
-        from tradingagents.default_config import DEFAULT_CONFIG
-        from tradingagents.graph.trading_graph import TradingAgentsGraph
+        from dromx.default_config import DEFAULT_CONFIG
+        from dromx.graph.trading_graph import DromXGraph
 
-        _report_llm = TradingAgentsGraph(config=DEFAULT_CONFIG.copy()).deep_thinking_llm
+        _report_llm = DromXGraph(config=DEFAULT_CONFIG.copy()).deep_thinking_llm
     return _report_llm
 
 
@@ -357,7 +357,7 @@ def price(ticker: str, date: str | None = None, days: int = 120,
     try:
         from datetime import date as _date
 
-        from tradingagents.dataflows.stockstats_utils import load_ohlcv
+        from dromx.dataflows.stockstats_utils import load_ohlcv
 
         curr_date = (date or "").strip() or _date.today().isoformat()
         df = load_ohlcv(ticker, curr_date)
@@ -402,7 +402,7 @@ def qa(run_id: str, req: QARequest, _: None = Depends(auth.require_auth)) -> QAR
         raise HTTPException(status_code=409, detail="run has no analysis yet")
 
     from cli.qa_agent import answer_question
-    from tradingagents.agents.utils.report_summarizer import summarize_state
+    from dromx.agents.utils.report_summarizer import summarize_state
 
     summary = summarize_state(final_state)
     history = [(q, a) for q, a in (req.history or [])]
@@ -426,7 +426,7 @@ async def qa_stream(run_id: str, req: QARequest, _: None = Depends(auth.require_
         raise HTTPException(status_code=409, detail="run has no analysis yet")
 
     from cli.qa_agent import build_qa_prompt
-    from tradingagents.agents.utils.report_summarizer import summarize_state
+    from dromx.agents.utils.report_summarizer import summarize_state
 
     summary = summarize_state(final_state)
     history = [(q, a) for q, a in (req.history or [])]
@@ -493,7 +493,7 @@ def download_report_pdf(run_id: str, _: None = Depends(auth.require_auth)):
     pdf, rec = result
     ticker = (rec.get("ticker") or run_id).replace("/", "_")
     date = (rec.get("trade_date") or "").strip()
-    fname = f"TradingAgents_{ticker}_{date}.pdf".replace(" ", "")
+    fname = f"DromX_{ticker}_{date}.pdf".replace(" ", "")
     return Response(
         content=pdf,
         media_type="application/pdf",

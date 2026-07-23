@@ -1,6 +1,6 @@
 """Lightweight single-password auth for the web app (single-machine, self-use).
 
-If the env var ``TRADINGAGENTS_WEB_PASSWORD`` is set, the API requires a bearer
+If the env var ``DROMX_WEB_PASSWORD`` is set, the API requires a bearer
 token obtained from ``POST /api/login`` with that password. Tokens are HMAC-signed
 with the password (so no separate secret to manage) and carry an expiry, kept in
 the token itself — there is no server-side session store.
@@ -20,7 +20,7 @@ import time
 
 from fastapi import Header, HTTPException, Query
 
-_ENV_KEY = "TRADINGAGENTS_WEB_PASSWORD"
+_ENV_KEY = "DROMX_WEB_PASSWORD"
 _TTL_SECONDS = 7 * 24 * 3600  # a week; re-login after that
 
 

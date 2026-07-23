@@ -1,6 +1,6 @@
 """Eastmoney full-market snapshot — the free ``universe`` source for screening.
 
-TradingAgents' data layer fetches one symbol at a time (``load_ohlcv``); it has
+DromX' data layer fetches one symbol at a time (``load_ohlcv``); it has
 no notion of "every stock in a market". The v0.4.0 strategy engine needs that
 universe to screen across. Eastmoney's public ``clist`` endpoint provides it for
 free (no key): a single paginated call returns every listed name in a market

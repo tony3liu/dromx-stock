@@ -5,7 +5,7 @@ strategy *format* is preserved verbatim (declarative Python modules with META /
 ``filter(df, params)`` / ENTRY_SIGNALS / STOP_LOSS …) so the builtin strategies
 port over almost unchanged. What we changed:
 
-  * The enriched-data source is TradingAgents' free ``DataAdapter.load_universe``
+  * The enriched-data source is DromX' free ``DataAdapter.load_universe``
     (Eastmoney snapshot + on-demand stockstats), not TickFlow's paid parquet.
   * ``META["markets"]`` gates a strategy to specific markets (US / HK / CN). The
     engine is built for one market and only loads strategies that apply to it —

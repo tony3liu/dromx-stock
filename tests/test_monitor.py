@@ -13,7 +13,7 @@ import pytest
 
 @pytest.fixture
 def rules_mod(tmp_path, monkeypatch):
-    from tradingagents.strategy import monitor_rules
+    from dromx.strategy import monitor_rules
 
     monkeypatch.setattr(monitor_rules, "_RULES_DIR", tmp_path / "monitor_rules")
     return monitor_rules
@@ -155,7 +155,7 @@ def _frame():
 @pytest.mark.unit
 class TestMonitorEngine:
     def test_price_threshold_rule_hits(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         eng = MonitorEngine()
         eng.set_rules([{
@@ -167,7 +167,7 @@ class TestMonitorEngine:
         assert [e["symbol"] for e in events] == ["00001.HK"]
 
     def test_signal_truth_rule_hits(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         eng = MonitorEngine()
         eng.set_rules([{
@@ -179,7 +179,7 @@ class TestMonitorEngine:
         assert "signal_macd_golden" in events[0]["signals"]
 
     def test_and_or_logic(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         eng = MonitorEngine()
         eng.set_rules([{
@@ -191,7 +191,7 @@ class TestMonitorEngine:
         assert [e["symbol"] for e in events] == ["00001.HK"]
 
     def test_missing_field_yields_no_hits(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         eng = MonitorEngine()
         eng.set_rules([{
@@ -201,7 +201,7 @@ class TestMonitorEngine:
         assert eng.evaluate(_frame(), now=1000.0) == []
 
     def test_scope_symbols_filters(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         eng = MonitorEngine()
         eng.set_rules([{
@@ -213,7 +213,7 @@ class TestMonitorEngine:
         assert [e["symbol"] for e in events] == ["00003.HK"]
 
     def test_cooldown_dedup(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         eng = MonitorEngine()
         eng.set_rules([{
@@ -228,7 +228,7 @@ class TestMonitorEngine:
         assert len(eng.evaluate(_frame(), now=1000.0 + 4000)) == 1
 
     def test_alert_handler_called(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         seen = []
         eng = MonitorEngine(alert_handler=seen.append)
@@ -240,7 +240,7 @@ class TestMonitorEngine:
         assert len(seen) == 1 and seen[0]["symbol"] == "00001.HK"
 
     def test_strategy_pool_diff_baseline_then_changes(self):
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
 
         # Fake engine whose run() returns a controllable hit list.
         fake = mock.MagicMock()

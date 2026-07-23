@@ -3,7 +3,7 @@
 The strategy engine (``strategy.engine``) is a straight adaptation of TickFlow's
 declarative screener, but TickFlow fed it a pre-computed A-share parquet built
 from a paid feed. We have neither the parquet nor the paid feed, so this adapter
-manufactures the same shape of DataFrame from TradingAgents' free data layer.
+manufactures the same shape of DataFrame from DromX' free data layer.
 
 Two-stage design (the only tractable approach for a free, no-key setup — you
 cannot pull 5000 symbols' OHLCV history on every run):
@@ -23,7 +23,7 @@ cannot pull 5000 symbols' OHLCV history on every run):
 
 The resulting Polars DataFrame carries the union of columns the builtin
 strategies read (see ``strategy/builtin/*.py``). The whole day's result is cached
-to ``~/.tradingagents/strategy_cache/{market}_{as_of}.parquet`` so re-running any
+to ``~/.dromx/strategy_cache/{market}_{as_of}.parquet`` so re-running any
 strategy the same day is instant.
 
 Everything is best-effort: a symbol whose OHLCV fetch or indicator computation
@@ -40,11 +40,11 @@ import pandas as pd
 import polars as pl
 from stockstats import wrap
 
-from tradingagents.dataflows.eastmoney_universe import fetch_universe_snapshot
+from dromx.dataflows.eastmoney_universe import fetch_universe_snapshot
 
 logger = logging.getLogger(__name__)
 
-_CACHE_DIR = Path(os.path.expanduser("~")) / ".tradingagents" / "strategy_cache"
+_CACHE_DIR = Path(os.path.expanduser("~")) / ".dromx" / "strategy_cache"
 
 # Default ceiling on how many snapshot names get promoted to stage-2 compute.
 # Pulling OHLCV history is the expensive part; the prefilter should cut well
@@ -184,7 +184,7 @@ class DataAdapter:
         One pooled fetch for the whole day (not per symbol). On failure the pool is
         empty → all-False / 0, so limit-up strategies simply find nothing.
         """
-        from tradingagents.dataflows.eastmoney_limitup import fetch_limit_up_pool
+        from dromx.dataflows.eastmoney_limitup import fetch_limit_up_pool
 
         try:
             pool = fetch_limit_up_pool(as_of)
@@ -209,7 +209,7 @@ class DataAdapter:
     @staticmethod
     def _compute_one(symbol: str, as_of_str: str, snap: dict) -> dict | None:
         """Compute the enriched row for one symbol; None on any failure."""
-        from tradingagents.dataflows.stockstats_utils import load_ohlcv
+        from dromx.dataflows.stockstats_utils import load_ohlcv
 
         try:
             ohlcv = load_ohlcv(symbol, as_of_str)

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
 )

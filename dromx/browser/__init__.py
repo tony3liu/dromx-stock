@@ -1,4 +1,4 @@
-"""TradingAgents Browser Module — "read the web" capability.
+"""DromX Browser Module — "read the web" capability.
 
 Lets Analysts read JS-rendered finance pages, full article bodies, and rendered
 filing/announcement pages that the existing HTTP/API pipelines can't reach. It
@@ -8,18 +8,18 @@ API can't return the content (see docs/requirements/browser-integration.md).
 Backed by the ``agent-browser`` CLI (Node.js + Playwright Chromium); no paid API.
 Everything degrades gracefully: if the CLI/Chromium is missing or a page fails,
 functions return an error dict / ``"<read_article failed: ...>"`` placeholder and
-never raise, so a TradingAgents pipeline is never blocked.
+never raise, so a DromX pipeline is never blocked.
 
 Usage:
-    from tradingagents.browser import read_article, navigate, eval_js
+    from dromx.browser import read_article, navigate, eval_js
     text = read_article("https://finance.eastmoney.com/a/20250101.html")
 """
 
 from __future__ import annotations
 
-from tradingagents.browser._cli import find_agent_browser, run_browser_command
-from tradingagents.browser._session import get_or_create_session
-from tradingagents.browser._snapshot import truncate_snapshot
+from dromx.browser._cli import find_agent_browser, run_browser_command
+from dromx.browser._session import get_or_create_session
+from dromx.browser._snapshot import truncate_snapshot
 
 __all__ = [
     "navigate",
@@ -118,7 +118,7 @@ def read_article(url: str, task_id: str = "default") -> str:
 
     The Analyst pre-fetch entry point: wraps navigate + text extraction. Never
     raises — returns ``"<read_article failed: ...>"`` on error (follows the
-    TradingAgents ``_safe`` convention so it can be dropped straight into a
+    DromX ``_safe`` convention so it can be dropped straight into a
     prompt string).
     """
     result = navigate(url, task_id)

@@ -20,8 +20,8 @@ import logging
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from tradingagents.agents.schemas import IndustryReport, render_industry_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import IndustryReport, render_industry_report
+from dromx.agents.utils.agent_utils import (
     get_fundamentals,
     get_global_news,
     get_instrument_context_from_state,
@@ -31,7 +31,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_source_freshness_discipline,
     resolve_instrument_identity,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -67,7 +67,7 @@ def _identity_block(ticker: str) -> str:
 
 def _peer_block(ticker: str, curr_date: str) -> str:
     """Peer fundamentals for relative competitive positioning (best-effort)."""
-    from tradingagents.dataflows.config import get_config
+    from dromx.dataflows.config import get_config
 
     peers = [
         p for p in (get_config().get("peer_tickers") or [])
@@ -132,7 +132,7 @@ Fill the structured fields: direction, confidence, scenarios, industry_phase, co
 {get_source_freshness_discipline()}
 {get_language_instruction()}"""
 
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         cfg = get_config()
         agent_cfg = cfg.get("agent_loop") or {}
         per_analyst = (agent_cfg.get("per_analyst") or {}).get("industry", {}) or {}
@@ -142,7 +142,7 @@ Fill the structured fields: direction, confidence, scenarios, industry_phase, co
         )
 
         if loop_enabled:
-            from tradingagents.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="industry",
                 tools=[get_news, get_global_news, get_fundamentals],

@@ -1,4 +1,4 @@
-# TradingAgents/graph/trading_graph.py
+# DromX/graph/trading_graph.py
 
 import json
 import logging
@@ -12,17 +12,17 @@ import yfinance as yf
 # Instrument-identity helpers (the data tools themselves now live inside the
 # analyst nodes, which pre-fetch via ``.func(...)`` — the graph no longer wires
 # per-analyst ToolNodes).
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.utils.agent_utils import (
     build_instrument_context,
     resolve_instrument_identity,
 )
-from tradingagents.agents.utils.memory import TradingMemoryLog
-from tradingagents.agents.utils.signal_tracker import AnalystScorecard
-from tradingagents.dataflows.config import set_config
-from tradingagents.dataflows.utils import safe_ticker_component
-from tradingagents.default_config import DEFAULT_CONFIG
-from tradingagents.llm_clients import create_llm_client
-from tradingagents.reporting import write_report_tree
+from dromx.agents.utils.memory import TradingMemoryLog
+from dromx.agents.utils.signal_tracker import AnalystScorecard
+from dromx.dataflows.config import set_config
+from dromx.dataflows.utils import safe_ticker_component
+from dromx.default_config import DEFAULT_CONFIG
+from dromx.llm_clients import create_llm_client
+from dromx.reporting import write_report_tree
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
 from .conditional_logic import ConditionalLogic
@@ -34,7 +34,7 @@ from .signal_processing import SignalProcessor
 logger = logging.getLogger(__name__)
 
 
-class TradingAgentsGraph:
+class DromXGraph:
     """Main class that orchestrates the trading agents framework."""
 
     def __init__(
@@ -141,7 +141,7 @@ class TradingAgentsGraph:
                 kwargs["effort"] = effort
 
         # Sampling temperature is cross-provider: forward it whenever set.
-        # float() here so a value coming from a TRADINGAGENTS_TEMPERATURE env
+        # float() here so a value coming from a DROMX_TEMPERATURE env
         # string ("0.2") works the same as a programmatic float.
         temperature = self.config.get("temperature")
         if temperature is not None and temperature != "":
@@ -193,7 +193,7 @@ class TradingAgentsGraph:
         actual_holding_days)`` or ``(None, None, None)`` if price data is
         unavailable (too recent, delisted, or network error).
         """
-        from tradingagents.dataflows.symbol_utils import normalize_symbol
+        from dromx.dataflows.symbol_utils import normalize_symbol
 
         try:
             start = datetime.strptime(trade_date, "%Y-%m-%d")
@@ -290,7 +290,7 @@ class TradingAgentsGraph:
         a configured but unreachable holding never blocks the run.
         """
         try:
-            from tradingagents.agents.portfolio.portfolio_context import (
+            from dromx.agents.portfolio.portfolio_context import (
                 build_portfolio_context,
                 parse_holdings,
             )
@@ -312,7 +312,7 @@ class TradingAgentsGraph:
         the run.
         """
         try:
-            from tradingagents.dataflows.market_context import build_market_context
+            from dromx.dataflows.market_context import build_market_context
 
             return build_market_context(ticker, str(trade_date), self.config)
         except Exception as exc:  # noqa: BLE001 — market context is best-effort
@@ -329,7 +329,7 @@ class TradingAgentsGraph:
         '' so the run is never blocked. See ``dataflows.overnight_transmission``.
         """
         try:
-            from tradingagents.dataflows.overnight_transmission import (
+            from dromx.dataflows.overnight_transmission import (
                 build_overnight_transmission,
             )
 
@@ -350,7 +350,7 @@ class TradingAgentsGraph:
         yields '' so the run is never blocked. See ``dataflows.pattern_discovery``.
         """
         try:
-            from tradingagents.dataflows.pattern_discovery import (
+            from dromx.dataflows.pattern_discovery import (
                 build_pattern_discovery,
             )
 
@@ -368,7 +368,7 @@ class TradingAgentsGraph:
         '' so the run is never blocked. See ``dataflows.naver``.
         """
         try:
-            from tradingagents.dataflows.naver import build_foreign_flow
+            from dromx.dataflows.naver import build_foreign_flow
 
             return build_foreign_flow(ticker, str(trade_date), self.config)
         except Exception as exc:  # noqa: BLE001 — foreign flow is best-effort
@@ -385,7 +385,7 @@ class TradingAgentsGraph:
         degrades to ("equity", "") so the run is never blocked.
         """
         try:
-            from tradingagents.dataflows.etf_data import resolve_etf_structure
+            from dromx.dataflows.etf_data import resolve_etf_structure
 
             struct = resolve_etf_structure(ticker, str(trade_date), llm=self.quick_thinking_llm)
             return struct.instrument_type(), struct.framework_note()
@@ -564,7 +564,7 @@ class TradingAgentsGraph:
         # Save to file. Reject ticker values that would escape the
         # results directory when joined as a path component.
         safe_ticker = safe_ticker_component(self.ticker)
-        directory = Path(self.config["results_dir"]) / safe_ticker / "TradingAgentsStrategy_logs"
+        directory = Path(self.config["results_dir"]) / safe_ticker / "DromXStrategy_logs"
         directory.mkdir(parents=True, exist_ok=True)
 
         log_path = directory / f"full_states_log_{trade_date}.json"

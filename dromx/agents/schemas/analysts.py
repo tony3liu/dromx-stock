@@ -554,14 +554,14 @@ def _render_scenarios(scenarios: list) -> list[str]:
     """Render the bear/base/bull distribution as a deterministic markdown table.
 
     The row format (``| Bull | 25% | +25% | trigger |``) is exactly what
-    ``tradingagents.agents.utils.rating.parse_scenarios`` re-parses, so the
+    ``dromx.agents.utils.rating.parse_scenarios`` re-parses, so the
     aggregator can recover the distribution and compute EV + skew. Returns an
     empty list when no scenarios were provided (free-text fallback), so the
     caller simply omits the section.
     """
     if not scenarios:
         return []
-    from tradingagents.agents.utils.rating import (
+    from dromx.agents.utils.rating import (
         scenarios_expected_value,
         scenarios_skew_label,
     )

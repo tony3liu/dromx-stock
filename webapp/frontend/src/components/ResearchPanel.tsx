@@ -5,7 +5,7 @@ import { copyText } from "../lib/export";
 
 // Google Finance research panel (PRD §4.3, P0). No scraping / no API: we hand the
 // user the right deep links for this ticker plus a ready-to-paste prompt for
-// Google Finance's own AI research panel. Complements TradingAgents' analysis
+// Google Finance's own AI research panel. Complements DromX' analysis
 // with realtime data + Gemini research the engine doesn't fetch itself.
 export function ResearchPanel({ ticker, date }: { ticker: string; date?: string }) {
   const [copied, setCopied] = useState(false);

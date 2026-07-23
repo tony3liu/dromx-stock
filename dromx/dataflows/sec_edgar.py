@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 _TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 _FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 # SEC asks for a descriptive UA identifying the caller; they 403 generic ones.
-_HEADERS = {"User-Agent": "TradingAgents/1.0 (research; contact@tradingagents.local)"}
+_HEADERS = {"User-Agent": "DromX/1.0 (research; contact@dromx.local)"}
 _TIMEOUT = 25
 
 # Per-process caches: the ticker map is ~800KB and facts are large, so avoid

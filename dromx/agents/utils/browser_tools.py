@@ -3,7 +3,7 @@ full text via the headless browser.
 
 The project's data tools cover price / financials / news, but sometimes a
 specific URL needs its full body read (an article beyond the ~200-char
-snippet, an SEC filing, a data page no vendor covers). ``tradingagents.browser``
+snippet, an SEC filing, a data page no vendor covers). ``dromx.browser``
 already exposes ``read_article`` (a plain function the news analyst's
 pre-fetch uses); this wraps it as a ``@tool`` so the agent loop can call it
 on demand. Best-effort: if the browser isn't enabled / the CLI is missing,
@@ -25,7 +25,7 @@ def web_read(url: str) -> str:
     error string if unavailable — don't fabricate, fall back to the snippet.
     """
     try:
-        from tradingagents.browser import browser_available, read_article
+        from dromx.browser import browser_available, read_article
         if not browser_available():
             return (
                 "<browser unavailable: set enable_browser=true and install the "

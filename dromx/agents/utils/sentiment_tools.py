@@ -13,9 +13,9 @@ from __future__ import annotations
 
 from langchain_core.tools import tool
 
-from tradingagents.dataflows.reddit import fetch_reddit_posts
-from tradingagents.dataflows.stocktwits import fetch_stocktwits_messages
-from tradingagents.dataflows.x_twitter import fetch_x_posts
+from dromx.dataflows.reddit import fetch_reddit_posts
+from dromx.dataflows.stocktwits import fetch_stocktwits_messages
+from dromx.dataflows.x_twitter import fetch_x_posts
 
 
 @tool

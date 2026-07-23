@@ -14,7 +14,7 @@ Job kinds (PRD §2.3.1):
 Plus one internal job when monitoring is enabled: monitor_poll, which loads the
 enabled rules, evaluates them against the current snapshot, and fires alerts.
 
-Jobs persist to ``~/.tradingagents/jobs.json``. Everything is gated by config
+Jobs persist to ``~/.dromx/jobs.json``. Everything is gated by config
 (``scheduler.enabled`` / ``monitor.enabled``, both default False) so a normal
 deployment that never opts in is completely unaffected.
 """
@@ -26,16 +26,16 @@ import os
 import threading
 from pathlib import Path
 
-logger = logging.getLogger("tradingagents.web.scheduler")
+logger = logging.getLogger("dromx.web.scheduler")
 
-_JOBS_PATH = Path(os.path.expanduser("~")) / ".tradingagents" / "jobs.json"
+_JOBS_PATH = Path(os.path.expanduser("~")) / ".dromx" / "jobs.json"
 _LOCK = threading.Lock()
 
 JOB_KINDS = {"analysis", "screen", "warmup"}
 
 # Lazily-built singletons.
 _scheduler = None          # BackgroundScheduler
-_monitor_engine = None     # tradingagents.strategy.monitor.MonitorEngine
+_monitor_engine = None     # dromx.strategy.monitor.MonitorEngine
 
 
 # ---------------------------------------------------------------------------
@@ -44,20 +44,20 @@ _monitor_engine = None     # tradingagents.strategy.monitor.MonitorEngine
 
 
 def _cfg() -> dict:
-    from tradingagents.default_config import DEFAULT_CONFIG
+    from dromx.default_config import DEFAULT_CONFIG
 
     sched = dict(DEFAULT_CONFIG.get("scheduler", {}))
     mon = dict(DEFAULT_CONFIG.get("monitor", {}))
     # Nested env overrides (the flat _ENV_OVERRIDES mechanism can't reach these).
-    if os.getenv("TRADINGAGENTS_SCHEDULER_ENABLED"):
-        sched["enabled"] = os.environ["TRADINGAGENTS_SCHEDULER_ENABLED"].lower() in ("1", "true", "yes", "on")
-    if os.getenv("TRADINGAGENTS_SCHEDULER_TIMEZONE"):
-        sched["timezone"] = os.environ["TRADINGAGENTS_SCHEDULER_TIMEZONE"]
-    if os.getenv("TRADINGAGENTS_MONITOR_ENABLED"):
-        mon["enabled"] = os.environ["TRADINGAGENTS_MONITOR_ENABLED"].lower() in ("1", "true", "yes", "on")
-    if os.getenv("TRADINGAGENTS_MONITOR_POLL_SECONDS"):
+    if os.getenv("DROMX_SCHEDULER_ENABLED"):
+        sched["enabled"] = os.environ["DROMX_SCHEDULER_ENABLED"].lower() in ("1", "true", "yes", "on")
+    if os.getenv("DROMX_SCHEDULER_TIMEZONE"):
+        sched["timezone"] = os.environ["DROMX_SCHEDULER_TIMEZONE"]
+    if os.getenv("DROMX_MONITOR_ENABLED"):
+        mon["enabled"] = os.environ["DROMX_MONITOR_ENABLED"].lower() in ("1", "true", "yes", "on")
+    if os.getenv("DROMX_MONITOR_POLL_SECONDS"):
         try:
-            mon["poll_interval_seconds"] = int(os.environ["TRADINGAGENTS_MONITOR_POLL_SECONDS"])
+            mon["poll_interval_seconds"] = int(os.environ["DROMX_MONITOR_POLL_SECONDS"])
         except ValueError:
             pass
     return {"scheduler": sched, "monitor": mon}
@@ -244,7 +244,7 @@ def _notify_job_failure(job: dict, exc: Exception) -> None:
 def _get_monitor_engine():
     global _monitor_engine
     if _monitor_engine is None:
-        from tradingagents.strategy.monitor import MonitorEngine
+        from dromx.strategy.monitor import MonitorEngine
         from webapp.backend import alert_store, notify, strategy as strategy_api
 
         def _handler(ev: dict) -> None:
@@ -266,7 +266,7 @@ def monitor_poll() -> dict:
     """One monitoring cycle: reload rules, screen the market, evaluate, alert."""
     from datetime import date
 
-    from tradingagents.strategy import monitor_rules
+    from dromx.strategy import monitor_rules
     from webapp.backend import strategy as strategy_api
 
     rules = [r for r in monitor_rules.load_all() if r.get("enabled", True)]

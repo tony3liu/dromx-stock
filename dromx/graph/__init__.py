@@ -1,14 +1,14 @@
-# TradingAgents/graph/__init__.py
+# DromX/graph/__init__.py
 
 from .conditional_logic import ConditionalLogic
 from .propagation import Propagator
 from .reflection import Reflector
 from .setup import GraphSetup
 from .signal_processing import SignalProcessor
-from .trading_graph import TradingAgentsGraph
+from .trading_graph import DromXGraph
 
 __all__ = [
-    "TradingAgentsGraph",
+    "DromXGraph",
     "ConditionalLogic",
     "GraphSetup",
     "Propagator",

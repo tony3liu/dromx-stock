@@ -36,8 +36,8 @@ from typing import Any, Callable
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
-from tradingagents.agents.utils.skills import SkillInjector
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.skills import SkillInjector
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -215,9 +215,9 @@ def build_analyst_loop_invoker(
     string. Caller passes its pre-fetched ``system_message`` (data already
     in the prompt) + the per-analyst ``tools`` list.
     """
-    from tradingagents.agents.schemas import orchestrator_skills_for
-    from tradingagents.agents.utils.skills import SkillLoader, SkillSelector
-    from tradingagents.agents.utils.skills.request_tool import make_request_skill_tool
+    from dromx.agents.schemas import orchestrator_skills_for
+    from dromx.agents.utils.skills import SkillLoader, SkillSelector
+    from dromx.agents.utils.skills.request_tool import make_request_skill_tool
 
     skills_cfg = cfg.get("skills") or {}
     tools = list(tools)
@@ -226,12 +226,12 @@ def build_analyst_loop_invoker(
     if add_web_read:
         # Browser: web_read fills data gaps (article / filing / data page full
         # text). Degrades gracefully (error string) if the browser isn't enabled.
-        from tradingagents.agents.utils.browser_tools import web_read
+        from dromx.agents.utils.browser_tools import web_read
         tools = tools + [web_read]
     # web_search (serper.dev API) is a universal data-failure fallback — any
     # analyst can search when its data tools can't get the info (a pending event
     # outcome, a real-time fact). Always added (HTTP API call, not a browser).
-    from tradingagents.agents.utils.browser_tools import web_search
+    from dromx.agents.utils.browser_tools import web_search
     tools = tools + [web_search]
 
     if skills is None and skills_cfg.get("enabled", True):

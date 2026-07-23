@@ -20,8 +20,8 @@ selection.
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from tradingagents.agents.schemas import MarketReport, render_market_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import MarketReport, render_market_report
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_pattern_discovery_from_state,
@@ -32,7 +32,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_stock_data,
     get_verified_market_snapshot,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -81,7 +81,7 @@ def create_market_analyst(llm):
             foreign_block=foreign_block,
         )
 
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         cfg = get_config()
         agent_cfg = cfg.get("agent_loop") or {}
         per_analyst = (agent_cfg.get("per_analyst") or {}).get("market", {}) or {}
@@ -91,7 +91,7 @@ def create_market_analyst(llm):
         )
 
         if loop_enabled:
-            from tradingagents.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="market",
                 tools=[get_stock_data, get_indicators, get_verified_market_snapshot],
@@ -146,8 +146,8 @@ def _build_etf_block(ticker: str, curr_date: str, llm=None) -> str:
     currencies). Config ``etf_underlying_map`` is an OPTIONAL manual override only.
     Non-ETFs yield '' so single-stock analysis is unchanged. Best-effort.
     """
-    from tradingagents.dataflows.config import get_config
-    from tradingagents.dataflows.etf_data import (
+    from dromx.dataflows.config import get_config
+    from dromx.dataflows.etf_data import (
         build_etf_passthrough,
         resolve_etf_structure,
     )
@@ -173,7 +173,7 @@ def _build_peer_block(ticker: str, curr_date: str) -> str:
     prompt is unchanged for single-name analysis. Peers that fail to fetch are
     skipped — peer context is best-effort and must never abort the run.
     """
-    from tradingagents.dataflows.config import get_config
+    from dromx.dataflows.config import get_config
 
     peers = [
         p for p in (get_config().get("peer_tickers") or [])

@@ -28,14 +28,14 @@ from datetime import date as _date
 from pathlib import Path
 from typing import Callable
 
-logger = logging.getLogger("tradingagents.web.backtest")
+logger = logging.getLogger("dromx.web.backtest")
 
 MAX_DAYS = 50  # hard ceiling on full-pipeline runs per backtest (cost guard)
 _NOISE = 0.01  # ±1% band: a directional call needs a real move to be confirmed
 
 _DIR = {"buy": 1, "overweight": 1, "hold": 0, "neutral": 0, "underweight": -1, "sell": -1}
 
-_BT_DIR = Path(os.path.expanduser("~")) / ".tradingagents" / "backtests"
+_BT_DIR = Path(os.path.expanduser("~")) / ".dromx" / "backtests"
 _REGISTRY: dict[str, dict] = {}   # id -> live status dict (progress polling)
 _LOCK = threading.Lock()
 
@@ -96,7 +96,7 @@ def list_backtests() -> list[dict]:
 
 def _closes(ticker: str, curr_date: str) -> list[tuple[str, float]]:
     """(date, close) list up to ``curr_date`` via the engine data layer."""
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
 
     df = load_ohlcv(ticker, curr_date)
     if df is None or getattr(df, "empty", True):

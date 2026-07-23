@@ -1,6 +1,6 @@
 """Monitor rules + alerts API (v0.4.0 Phase 2).
 
-Thin HTTP glue over ``tradingagents.strategy.monitor_rules`` (rule CRUD) and
+Thin HTTP glue over ``dromx.strategy.monitor_rules`` (rule CRUD) and
 ``webapp.backend.alert_store`` (alert history). PRD §2.4.2:
 
   GET    /api/monitor/rules        list rules
@@ -14,7 +14,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from tradingagents.strategy import monitor_rules
+from dromx.strategy import monitor_rules
 from webapp.backend import alert_store, auth
 
 router = APIRouter(prefix="/api/monitor", tags=["monitor"])

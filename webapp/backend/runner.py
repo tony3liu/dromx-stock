@@ -1,6 +1,6 @@
 """Background analysis runner: drives the engine's stream and emits SSE events.
 
-We run ``TradingAgentsGraph(...).graph.stream(init_state)`` ourselves (instead of
+We run ``DromXGraph(...).graph.stream(init_state)`` ourselves (instead of
 the blocking ``propagate``) so each node's output becomes a live event the moment
 it lands — exactly how the CLI's live panel works, but pushed to the browser.
 
@@ -10,7 +10,7 @@ and reconnects, or switches tabs and comes back) can replay the full event
 history from index 0 and then tail new events. When the stream finishes we merge
 all chunks into final_state, persist it, and append a terminal ``complete`` event.
 
-The engine is used READ-ONLY: TradingAgentsGraph, write_report_tree, parse_rating.
+The engine is used READ-ONLY: DromXGraph, write_report_tree, parse_rating.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from typing import Any, Iterator
 
 from webapp.backend import store
 
-logger = logging.getLogger("tradingagents.web.runner")
+logger = logging.getLogger("dromx.web.runner")
 
 # Node label → state key it produces (from the engine pipeline). Lets us turn a
 # raw graph chunk into a "this section is ready" event with its markdown.
@@ -55,7 +55,7 @@ def _notify_on_complete(handle, decision: str) -> None:
 
         rating = handle.rating or "N/A"
         src = f"（来自策略 {handle.strategy_id}）" if handle.strategy_id else ""
-        title = f"TradingAgents · {handle.ticker} 分析完成"
+        title = f"DromX · {handle.ticker} 分析完成"
         subtitle = f"{handle.ticker} · 评级 {rating} · {handle.trade_date}{src}"
         body = decision.strip() or f"{handle.ticker} 分析完成，评级 {rating}。"
         notify.alert(title, body, card_subtitle=subtitle)
@@ -180,8 +180,8 @@ def run_analysis_once(
     — the portfolio-context factor only appears when the user actually declares
     holdings for the run.
     """
-    from tradingagents.default_config import DEFAULT_CONFIG
-    from tradingagents.graph.trading_graph import TradingAgentsGraph
+    from dromx.default_config import DEFAULT_CONFIG
+    from dromx.graph.trading_graph import DromXGraph
 
     from webapp.backend.position import build_position_context
 
@@ -196,7 +196,7 @@ def run_analysis_once(
 
     analyst_keys = tuple(analysts) if analysts else (
         "market", "social", "news", "fundamentals", "industry")
-    graph = TradingAgentsGraph(selected_analysts=analyst_keys, config=cfg)
+    graph = DromXGraph(selected_analysts=analyst_keys, config=cfg)
 
     asset_type = "stock"
     company, td = ticker, trade_date
@@ -230,7 +230,7 @@ def run_analysis_once(
                         seen.add(key)
                         on_section(key, label, val)
 
-    from tradingagents.agents.utils.rating import parse_rating
+    from dromx.agents.utils.rating import parse_rating
     decision = merged.get("final_trade_decision", "") or ""
     rating = parse_rating(decision) if decision else None
 
@@ -295,8 +295,8 @@ def _worker(handle: RunHandle) -> None:
                      "ticker": handle.ticker, "nodes": PIPELINE_NODES})
 
         # Build config from the configured engine (.env) + per-run overrides.
-        from tradingagents.default_config import DEFAULT_CONFIG
-        from tradingagents.graph.trading_graph import TradingAgentsGraph
+        from dromx.default_config import DEFAULT_CONFIG
+        from dromx.graph.trading_graph import DromXGraph
 
         cfg = DEFAULT_CONFIG.copy()
         rounds = _depth_to_rounds(handle.depth)
@@ -309,7 +309,7 @@ def _worker(handle: RunHandle) -> None:
         analyst_keys = tuple(handle.analysts) if handle.analysts else (
             "market", "social", "news", "fundamentals", "industry")
         logger.info("run %s building graph (analysts=%s)", handle.id, ",".join(analyst_keys))
-        graph = TradingAgentsGraph(selected_analysts=analyst_keys, config=cfg)
+        graph = DromXGraph(selected_analysts=analyst_keys, config=cfg)
 
         # Detect asset type the way the engine/CLI does.
         asset_type = "stock"
@@ -363,7 +363,7 @@ def _worker(handle: RunHandle) -> None:
                         })
 
         handle.final_state = merged
-        from tradingagents.agents.utils.rating import parse_rating
+        from dromx.agents.utils.rating import parse_rating
         decision = merged.get("final_trade_decision", "") or ""
         handle.rating = parse_rating(decision) if decision else None
         handle.status = "done"

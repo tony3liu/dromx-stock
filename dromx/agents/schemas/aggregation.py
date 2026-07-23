@@ -13,7 +13,7 @@ from ._shared import _conf_cn, _dir_cn
 #
 # The Signal Aggregator is a NON-LLM node: it parses the four rendered analyst
 # reports back into (direction, confidence) via
-# ``tradingagents.agents.utils.rating.parse_analyst_signal``, computes a
+# ``dromx.agents.utils.rating.parse_analyst_signal``, computes a
 # confidence-weighted consensus, and surfaces the explicit points of
 # disagreement so the bull/bear debate can target them instead of re-deriving
 # them. These schemas are plain data containers (the node fills them directly,

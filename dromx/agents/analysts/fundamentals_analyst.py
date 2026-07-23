@@ -17,8 +17,8 @@ import logging
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from tradingagents.agents.schemas import FundamentalsReport, render_fundamentals_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import FundamentalsReport, render_fundamentals_report
+from dromx.agents.utils.agent_utils import (
     get_balance_sheet,
     get_cashflow,
     get_framework_note_from_state,
@@ -29,7 +29,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_regime_context_from_state,
     get_source_freshness_discipline,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -52,7 +52,7 @@ def _build_peer_block(ticker: str, curr_date: str) -> str:
     that fail to fetch are skipped — peer context is best-effort and never
     aborts the run.
     """
-    from tradingagents.dataflows.config import get_config
+    from dromx.dataflows.config import get_config
 
     peers = [
         p for p in (get_config().get("peer_tickers") or [])
@@ -99,7 +99,7 @@ def create_fundamentals_analyst(llm):
             peer_block=peer_block,
         )
 
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         cfg = get_config()
         agent_cfg = cfg.get("agent_loop") or {}
         per_analyst = (agent_cfg.get("per_analyst") or {}).get("fundamentals", {}) or {}
@@ -109,7 +109,7 @@ def create_fundamentals_analyst(llm):
         )
 
         if loop_enabled:
-            from tradingagents.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="fundamentals",
                 tools=[get_fundamentals, get_income_statement, get_balance_sheet, get_cashflow],

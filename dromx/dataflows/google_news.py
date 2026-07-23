@@ -29,7 +29,7 @@ from .utils import format_news_headline
 logger = logging.getLogger(__name__)
 
 _RSS_URL = "https://news.google.com/rss/search"
-_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; TradingAgents/1.0)"}
+_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; DromX/1.0)"}
 _TIMEOUT = 15
 
 

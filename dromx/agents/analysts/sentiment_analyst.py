@@ -21,8 +21,8 @@ back to free-text generation for providers that lack native support, so
 the sentiment header (band + score + confidence) is deterministic across
 runs and providers instead of free-form per-model prose.
 
-See: https://github.com/TauricResearch/TradingAgents/issues/557
-See: https://github.com/TauricResearch/TradingAgents/issues/796
+See: https://github.com/TauricResearch/DromX/issues/557
+See: https://github.com/TauricResearch/DromX/issues/796
 """
 
 from datetime import datetime, timedelta
@@ -30,26 +30,26 @@ from datetime import datetime, timedelta
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from tradingagents.agents.schemas import SentimentReport, render_sentiment_report
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import SentimentReport, render_sentiment_report
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_news,
     get_regime_context_from_state,
     get_source_freshness_discipline,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
-from tradingagents.agents.utils.sentiment_tools import (
+from dromx.agents.utils.sentiment_tools import (
     fetch_reddit_tool,
     fetch_stocktwits_tool,
     fetch_x_posts_tool,
 )
-from tradingagents.dataflows.reddit import fetch_reddit_posts
-from tradingagents.dataflows.stocktwits import fetch_stocktwits_messages
-from tradingagents.dataflows.x_twitter import fetch_x_posts
+from dromx.dataflows.reddit import fetch_reddit_posts
+from dromx.dataflows.stocktwits import fetch_stocktwits_messages
+from dromx.dataflows.x_twitter import fetch_x_posts
 
 
 def _seven_days_back(trade_date: str) -> str:
@@ -92,7 +92,7 @@ def create_sentiment_analyst(llm):
             regime_context=regime_context,
         )
 
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         cfg = get_config()
         agent_cfg = cfg.get("agent_loop") or {}
         per_analyst = (agent_cfg.get("per_analyst") or {}).get("sentiment", {}) or {}
@@ -102,7 +102,7 @@ def create_sentiment_analyst(llm):
         )
 
         if loop_enabled:
-            from tradingagents.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="sentiment",
                 tools=[get_news, fetch_stocktwits_tool, fetch_reddit_tool, fetch_x_posts_tool],

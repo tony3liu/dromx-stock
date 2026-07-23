@@ -64,7 +64,7 @@ def parse_holdings(raw) -> list[dict]:
 
 def _returns(symbol: str, curr_date: str, lookback: int = 60):
     """Daily returns Series for ``symbol``, or None on any failure."""
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
 
     df = load_ohlcv(symbol, curr_date)
     if df is None or df.empty or "Close" not in df.columns:
@@ -89,7 +89,7 @@ def _identity(ticker: str) -> dict:
     """
     ident: dict = {}
     try:
-        from tradingagents.agents.utils.agent_utils import resolve_instrument_identity
+        from dromx.agents.utils.agent_utils import resolve_instrument_identity
 
         ident = resolve_instrument_identity(ticker) or {}
     except Exception:  # noqa: BLE001 — identity is best-effort
@@ -97,7 +97,7 @@ def _identity(ticker: str) -> dict:
     if not ident.get("sector") and not ident.get("name") and not ident.get("company_name"):
         # yfinance gave nothing — recover a display name from the quote sources.
         try:
-            from tradingagents.dataflows.etf_data import _fund_name
+            from dromx.dataflows.etf_data import _fund_name
 
             name = _fund_name(ticker)
             if name:
@@ -178,7 +178,7 @@ def _classify_sectors_llm(names: dict, llm) -> dict:
 def _listing_currency(ticker: str) -> str:
     """Listing currency from the ticker's market (us/hk/cn), or 'other'."""
     try:
-        from tradingagents.dataflows.tencent import _classify
+        from dromx.dataflows.tencent import _classify
 
         market, _code = _classify(ticker)
         return {"us": "USD", "hk": "HKD", "cn": "CNY"}.get(market, "other")

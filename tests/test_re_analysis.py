@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from tradingagents.agents.analysts.re_analysis import _KEY_TO_REPORT, create_re_analysis
+from dromx.agents.analysts.re_analysis import _KEY_TO_REPORT, create_re_analysis
 
 _LONG = "UPDATED REPORT CONTENT THAT IS LONG ENOUGH TO PASS THE FIFTY CHAR MINIMUM CHECK"
 

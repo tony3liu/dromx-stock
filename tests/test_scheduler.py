@@ -121,7 +121,7 @@ class TestDispatch:
 @pytest.mark.unit
 class TestMonitorPoll:
     def test_poll_no_rules_returns_zero(self, sched, monkeypatch):
-        monkeypatch.setattr("tradingagents.strategy.monitor_rules.load_all", lambda: [])
+        monkeypatch.setattr("dromx.strategy.monitor_rules.load_all", lambda: [])
         out = sched.monitor_poll()
         assert out["ok"] is True and out["events"] == 0
 
@@ -131,7 +131,7 @@ class TestMonitorPoll:
         rule = {"id": "r", "name": "x", "type": "price", "scope": "all",
                 "enabled": True,
                 "conditions": [{"field": "change_pct", "op": ">", "value": 0.05}]}
-        monkeypatch.setattr("tradingagents.strategy.monitor_rules.load_all", lambda: [rule])
+        monkeypatch.setattr("dromx.strategy.monitor_rules.load_all", lambda: [rule])
         df = pl.DataFrame({"symbol": ["X"], "name": ["X"], "close": [10.0],
                           "change_pct": [0.08]})
         fake_adapter = mock.MagicMock()

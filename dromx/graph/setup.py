@@ -1,11 +1,11 @@
-# TradingAgents/graph/setup.py
+# DromX/graph/setup.py
 
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from tradingagents.agents import (
+from dromx.agents import (
     create_aggressive_debator,
     create_bear_researcher,
     create_bull_researcher,
@@ -29,8 +29,8 @@ from tradingagents.agents import (
     create_signal_aggregator,
     create_trader,
 )
-from tradingagents.agents.schemas import selected_analyst_keys
-from tradingagents.agents.utils.agent_states import AgentState
+from dromx.agents.schemas import selected_analyst_keys
+from dromx.agents.utils.agent_states import AgentState
 
 from .analyst_execution import build_analyst_execution_plan
 from .conditional_logic import ConditionalLogic
@@ -137,7 +137,7 @@ class GraphSetup:
         # between Regime and the analysts and writes a run-specific plan; each
         # analyst reads the plan and noops out if not selected (a static graph
         # can't drop nodes at runtime, so unselected analysts short-circuit).
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         agent_loop_enabled = bool(
             (get_config().get("agent_loop") or {}).get("enabled", False)
         )

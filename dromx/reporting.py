@@ -2,7 +2,7 @@
 
 Writes a run's per-section markdown (analysts, research, trading, risk,
 portfolio) plus a consolidated ``complete_report.md`` under ``save_path``. The
-CLI and ``TradingAgentsGraph.save_reports`` both call this, so a headless / API
+CLI and ``DromXGraph.save_reports`` both call this, so a headless / API
 run produces the same on-disk report tree a CLI run does.
 """
 

@@ -10,10 +10,10 @@ from unittest import mock
 import pytest
 import requests
 
-import tradingagents.dataflows.config as config_module
-import tradingagents.default_config as default_config
-from tradingagents.dataflows import interface, polymarket
-from tradingagents.dataflows.config import set_config
+import dromx.dataflows.config as config_module
+import dromx.default_config as default_config
+from dromx.dataflows import interface, polymarket
+from dromx.dataflows.config import set_config
 
 
 def _market(question, prob, *, volume, end_date, closed=False, wk=None):

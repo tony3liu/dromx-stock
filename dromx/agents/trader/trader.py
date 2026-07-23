@@ -6,8 +6,8 @@ import functools
 
 from langchain_core.messages import AIMessage
 
-from tradingagents.agents.schemas import TraderProposal, render_trader_proposal
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import TraderProposal, render_trader_proposal
+from dromx.agents.utils.agent_utils import (
     get_framework_note_from_state,
     get_instrument_context_from_state,
     get_language_instruction,
@@ -15,7 +15,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_position_context_from_state,
     get_regime_context_from_state,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )

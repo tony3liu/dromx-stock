@@ -1,6 +1,6 @@
-# TradingAgents/graph/conditional_logic.py
+# DromX/graph/conditional_logic.py
 
-from tradingagents.agents.utils.agent_states import AgentState
+from dromx.agents.utils.agent_states import AgentState
 
 
 class ConditionalLogic:

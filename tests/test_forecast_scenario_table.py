@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tradingagents.agents.schemas.forecast import (
+from dromx.agents.schemas.forecast import (
     ForecastHorizon,
     ForecastReport,
     PriceScenario,

@@ -7,22 +7,22 @@ import yfinance as yf
 from langchain_core.messages import HumanMessage, RemoveMessage
 
 # Import tools from separate utility files
-from tradingagents.agents.utils.core_stock_tools import get_stock_data
-from tradingagents.agents.utils.fundamental_data_tools import (
+from dromx.agents.utils.core_stock_tools import get_stock_data
+from dromx.agents.utils.fundamental_data_tools import (
     get_balance_sheet,
     get_cashflow,
     get_fundamentals,
     get_income_statement,
 )
-from tradingagents.agents.utils.macro_data_tools import get_macro_indicators
-from tradingagents.agents.utils.market_data_validation_tools import get_verified_market_snapshot
-from tradingagents.agents.utils.news_data_tools import (
+from dromx.agents.utils.macro_data_tools import get_macro_indicators
+from dromx.agents.utils.market_data_validation_tools import get_verified_market_snapshot
+from dromx.agents.utils.news_data_tools import (
     get_global_news,
     get_insider_transactions,
     get_news,
 )
-from tradingagents.agents.utils.prediction_markets_tools import get_prediction_markets
-from tradingagents.agents.utils.technical_indicators_tools import get_indicators
+from dromx.agents.utils.prediction_markets_tools import get_prediction_markets
+from dromx.agents.utils.technical_indicators_tools import get_indicators
 
 # Public surface: the data tools are imported here so agents and the graph
 # import them from one place, plus the instrument/language helpers defined below.
@@ -58,7 +58,7 @@ def get_language_instruction() -> str:
     portfolio manager — so a non-English run produces a fully localized
     report rather than a mix of languages.
     """
-    from tradingagents.dataflows.config import get_config
+    from dromx.dataflows.config import get_config
     lang = get_config().get("output_language", "English")
     if lang.strip().lower() == "english":
         return ""
@@ -138,7 +138,7 @@ def resolve_instrument_identity(ticker: str) -> dict:
     if cn_identity:
         return cn_identity
 
-    from tradingagents.dataflows.symbol_utils import normalize_symbol
+    from dromx.dataflows.symbol_utils import normalize_symbol
 
     try:
         info = yf.Ticker(normalize_symbol(ticker)).info or {}
@@ -218,7 +218,7 @@ def get_instrument_context_from_state(state: Mapping[str, Any]) -> str:
     """Return the instrument context for the current run.
 
     Prefers the identity-resolved context computed once at run start and
-    stored on the state (see ``TradingAgentsGraph.resolve_instrument_context``).
+    stored on the state (see ``DromXGraph.resolve_instrument_context``).
     Falls back to a ticker-only context — with no network lookup — when the
     state was constructed without it (bare programmatic states, tests), so a
     consumer is never forced to make a yfinance call mid-graph.
@@ -254,7 +254,7 @@ def get_regime_context_from_state(state: Mapping[str, Any]) -> str:
 def get_framework_note_from_state(state: Mapping[str, Any]) -> str:
     """Return the instrument-type framework instruction to inject, or ''.
 
-    Resolved once at run start (see ``TradingAgentsGraph._resolve_instrument_type``):
+    Resolved once at run start (see ``DromXGraph._resolve_instrument_type``):
     for a fund wrapper (e.g. a 2x ETF) it tells downstream agents to analyse the
     underlying + leverage/FX rather than run company valuation on the wrapper.
     Empty for a plain equity, so callers splice it unconditionally.
@@ -268,7 +268,7 @@ def get_framework_note_from_state(state: Mapping[str, Any]) -> str:
 def get_market_context_from_state(state: Mapping[str, Any]) -> str:
     """Return the move cross-validation block to inject, or ''.
 
-    Computed at run start (see ``TradingAgentsGraph._build_market_context``): the
+    Computed at run start (see ``DromXGraph._build_market_context``): the
     candidate's move vs its benchmark index and peers, so a node attributes a big
     move to market/sector vs single-name BEFORE inventing a company story. Empty
     when no move/benchmark available, so callers splice it unconditionally.
@@ -282,7 +282,7 @@ def get_market_context_from_state(state: Mapping[str, Any]) -> str:
 def get_overnight_transmission_from_state(state: Mapping[str, Any]) -> str:
     """Return the overnight transmission block to inject, or ''.
 
-    Computed at run start (see ``TradingAgentsGraph._build_overnight_transmission``):
+    Computed at run start (see ``DromXGraph._build_overnight_transmission``):
     the cross-market lead chain (US overnight → underlying morning → listing
     open) for an ETF, with the leverage-derived expected open and a transmission
     intact/broken flag. Empty for a non-ETF, a same-market fund, an LLM "no
@@ -297,7 +297,7 @@ def get_overnight_transmission_from_state(state: Mapping[str, Any]) -> str:
 def get_pattern_discovery_from_state(state: Mapping[str, Any]) -> str:
     """Return the forensics discovery block to inject, or ''.
 
-    Computed at run start (see ``TradingAgentsGraph._build_pattern_discovery``):
+    Computed at run start (see ``DromXGraph._build_pattern_discovery``):
     the anomaly-driven reverse anchor search — anomaly days, the pivot-vs-anchor
     deviation competition, algorithmic-precision verdict, and evolution. Pure
     deterministic EVIDENCE (no LLM) so the Market Analyst reasons from computed
@@ -313,7 +313,7 @@ def get_pattern_discovery_from_state(state: Mapping[str, Any]) -> str:
 def get_foreign_flow_from_state(state: Mapping[str, Any]) -> str:
     """Return the foreign-flow (chip) block to inject, or ''.
 
-    Computed at run start (see ``TradingAgentsGraph._build_foreign_flow``):
+    Computed at run start (see ``DromXGraph._build_foreign_flow``):
     Korea-only (Naver) foreign-ownership% snapshot + daily net-trading series +
     a consecutive net-sell/buy-days flag. Empty for non-Korea tickers or on
     fetch failure, so callers splice it unconditionally.

@@ -85,7 +85,7 @@ export function Monitor() {
       <div className="mx-auto max-w-[1180px] px-8 py-6">
         <div className="mb-5 flex items-start gap-2 rounded-[var(--radius-panel)] border border-[var(--color-warn-border)] bg-[var(--color-warn-tint)] px-3.5 py-2.5 text-[13px] text-[var(--color-ink-soft)]">
           <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--color-warn)]" />
-          <span>监控由后端定时轮询驱动，需以 <code className="rounded bg-[var(--color-warn-border)] px-1 font-mono text-[12px]">TRADINGAGENTS_MONITOR_ENABLED=true</code> 启动服务后才会自动评估规则。规则在此随时增改，下一轮轮询即生效。</span>
+          <span>监控由后端定时轮询驱动，需以 <code className="rounded bg-[var(--color-warn-border)] px-1 font-mono text-[12px]">DROMX_MONITOR_ENABLED=true</code> 启动服务后才会自动评估规则。规则在此随时增改，下一轮轮询即生效。</span>
         </div>
 
         {err && <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] px-4 py-3 text-sm text-[var(--color-bear)]">{err}</div>}

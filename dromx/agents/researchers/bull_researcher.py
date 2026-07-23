@@ -9,7 +9,7 @@ report and synthesises once — multi-angle analysis without the rhetoric of
 persuasion.
 """
 
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,

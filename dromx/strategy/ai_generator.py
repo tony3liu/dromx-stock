@@ -4,7 +4,7 @@ Adapted from TickFlow's ``ai_generator.py``. The AST safety check and literal
 META extraction are ported verbatim (they are the security boundary and must
 stay strict). The only substantive change is the LLM call: instead of TickFlow's
 async ``ai_provider``, we take a synchronous LangChain-style LLM (the engine's
-``quick_thinking_llm``), matching how the rest of TradingAgents invokes models.
+``quick_thinking_llm``), matching how the rest of DromX invokes models.
 
 Flow: user prompt → guide + system prompt → llm.invoke → strip code fence →
 AST safety check → literal META extraction → {code, meta, valid, error}.

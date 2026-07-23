@@ -8,7 +8,7 @@ export function buildReportMarkdown(
   sections: Record<string, string>,
 ): string {
   const lines: string[] = [
-    `# TradingAgents 分析报告 — ${ticker}`,
+    `# DromX 分析报告 — ${ticker}`,
     "",
     `- 分析日期: ${date}`,
     `- 评级: ${rating ?? "—"}`,

@@ -9,7 +9,7 @@ from urllib.error import HTTPError
 
 import pytest
 
-from tradingagents.dataflows import stocktwits
+from dromx.dataflows import stocktwits
 
 
 def _raise(exc):

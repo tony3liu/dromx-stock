@@ -9,7 +9,7 @@ deviation candidate — never assumed to be MA50.
 from __future__ import annotations
 
 import pandas as pd
-import tradingagents.dataflows.pattern_discovery as pdm
+import dromx.dataflows.pattern_discovery as pdm
 
 
 def _make_df(rows):
@@ -30,7 +30,7 @@ def _normal(c=100.0):
 
 
 def _patch_ohlcv(monkeypatch, df):
-    import tradingagents.dataflows.stockstats_utils as ss
+    import dromx.dataflows.stockstats_utils as ss
     monkeypatch.setattr(ss, "load_ohlcv", lambda *a, **k: df)
 
 

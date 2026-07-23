@@ -24,16 +24,16 @@ import polars as pl
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from tradingagents.strategy.data_adapter import DataAdapter
-from tradingagents.strategy.engine import StrategyEngine
+from dromx.strategy.data_adapter import DataAdapter
+from dromx.strategy.engine import StrategyEngine
 from webapp.backend import auth
 
-logger = logging.getLogger("tradingagents.web.strategy")
+logger = logging.getLogger("dromx.web.strategy")
 
-_BUILTIN_DIR = Path(__file__).resolve().parents[2] / "tradingagents" / "strategy" / "builtin"
+_BUILTIN_DIR = Path(__file__).resolve().parents[2] / "dromx" / "strategy" / "builtin"
 _USER_DIRS = {
-    "custom": Path.home() / ".tradingagents" / "strategies" / "custom",
-    "ai": Path.home() / ".tradingagents" / "strategies" / "ai",
+    "custom": Path.home() / ".dromx" / "strategies" / "custom",
+    "ai": Path.home() / ".dromx" / "strategies" / "ai",
 }
 _MARKETS = ("hk", "us", "cn")
 
@@ -115,7 +115,7 @@ class RunRequest(BaseModel):
 
 class GenerateRequest(BaseModel):
     prompt: str
-    save: bool = False             # persist to ~/.tradingagents/strategies/ai/ when valid
+    save: bool = False             # persist to ~/.dromx/strategies/ai/ when valid
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ def run_strategy(strategy_id: str, req: RunRequest,
 @router.post("/generate")
 def generate_strategy(req: GenerateRequest, _: None = Depends(auth.require_auth)) -> dict:
     """AI-generate a strategy from a natural-language prompt (optionally save it)."""
-    from tradingagents.strategy.ai_generator import AIStrategyGenerator
+    from dromx.strategy.ai_generator import AIStrategyGenerator
 
     result = AIStrategyGenerator(_qa_llm()).generate(req.prompt)
     if req.save and result.get("valid"):

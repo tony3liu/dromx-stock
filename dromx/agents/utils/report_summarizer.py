@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import re
 
-from tradingagents.agents.utils.rating import parse_analyst_signal, parse_rating
+from dromx.agents.utils.rating import parse_analyst_signal, parse_rating
 
 # (state key, label) for the five analyst lenses.
 _ANALYST_LENSES = (

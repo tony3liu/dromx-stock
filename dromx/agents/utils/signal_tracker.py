@@ -27,7 +27,7 @@ import logging
 import os
 from pathlib import Path
 
-from tradingagents.agents.utils.rating import direction_score, parse_analyst_signal
+from dromx.agents.utils.rating import direction_score, parse_analyst_signal
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@
 
 > Multi-Agent LLM Financial Trading Framework — agent loop + skills + 取证型分析。
 
-基于 TradingAgents 架构完全重构。核心能力围绕 **agent loop + skills**(不写死 workflow):
+基于 DromX 架构完全重构。核心能力围绕 **agent loop + skills**(不写死 workflow):
 
 - **agent loop + skills**:分析师可调工具迭代思考(LLM 用工具深挖),skill 可插拔方法论,按 regime/instrument/market 自动挂载
 - **取证型 + 预测型分析**:异常检测 + 锚点偏差竞争 + 算法精度证据 + 跨市场传导 + 外资筹码
@@ -18,20 +18,20 @@
 ## Quick start
 
 ```bash
-conda activate tradingagents
-conda run -n tradingagents --no-capture-output uvicorn webapp.backend.main:app --port 8077 --log-level info
+conda activate dromx
+conda run -n dromx --no-capture-output uvicorn webapp.backend.main:app --port 8077 --log-level info
 ```
 
 ## Config (`.env`)
 
 - `DEEPSEEK_API_KEY` / `SERPER_API_KEY`(serper.dev google 搜)
-- `TRADINGAGENTS_OUTPUT_LANGUAGE=中文`
-- `TRADINGAGENTS_LLM_PROVIDER` / `TRADINGAGENTS_DEEP_THINK_LLM`
+- `DROMX_OUTPUT_LANGUAGE=中文`
+- `DROMX_LLM_PROVIDER` / `DROMX_DEEP_THINK_LLM`
 
 ## Architecture
 
-LangGraph + agent loop + skills(21 内置)。Python 包名 `tradingagents`(import),项目名 DromX。
+LangGraph + agent loop + skills(21 内置)。Python 包名 `dromx`(import),项目名 DromX。
 
 ## License
 
-私有项目(基于开源 TradingAgents 架构重构)。
+私有项目(基于开源 DromX 架构重构)。

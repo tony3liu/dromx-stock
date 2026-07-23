@@ -8,12 +8,12 @@ count (only successful loads do).
 
 from __future__ import annotations
 
-from tradingagents.agents.utils.skills import SkillLoader
-from tradingagents.agents.utils.skills.request_tool import make_request_skill_tool
+from dromx.agents.utils.skills import SkillLoader
+from dromx.agents.utils.skills.request_tool import make_request_skill_tool
 
 
 def _loader():
-    return SkillLoader({"skills": {"enabled": True, "path": "~/.tradingagents/skills/"}})
+    return SkillLoader({"skills": {"enabled": True, "path": "~/.dromx/skills/"}})
 
 
 def test_returns_skill_body():

@@ -62,7 +62,7 @@ def _fuse_scenarios(pairs: list[tuple[float, float]]) -> list[dict]:
 
 def build_sizing(run_id: str) -> dict | None:
     """Return the sizing model for a run, or ``None`` if the run doesn't exist."""
-    from tradingagents.agents.utils.rating import (
+    from dromx.agents.utils.rating import (
         full_kelly_fraction,
         parse_scenarios,
         scenarios_expected_value,

@@ -34,7 +34,7 @@ def find_agent_browser() -> str:
     if path:
         return path
 
-    # repo root = three levels up from this file (tradingagents/browser/_cli.py)
+    # repo root = three levels up from this file (dromx/browser/_cli.py)
     local_bin = Path(__file__).resolve().parents[2] / "node_modules" / ".bin" / "agent-browser"
     if local_bin.exists():
         return str(local_bin)

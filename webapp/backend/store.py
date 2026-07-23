@@ -1,4 +1,4 @@
-"""Persistence for web runs: one JSON file per analysis under ~/.tradingagents/web_runs/.
+"""Persistence for web runs: one JSON file per analysis under ~/.dromx/web_runs/.
 
 Single-machine, no database. Each run stores its metadata + the engine's
 ``final_state`` (the 14 markdown report sections) so the history list and any
@@ -13,7 +13,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-_RUNS_DIR = Path(os.path.expanduser("~")) / ".tradingagents" / "web_runs"
+_RUNS_DIR = Path(os.path.expanduser("~")) / ".dromx" / "web_runs"
 
 # The engine's report sections, in pipeline order, with display labels. Mirrors
 # cli/main.py REPORT_SECTIONS so the web layer stays in lockstep with the engine.

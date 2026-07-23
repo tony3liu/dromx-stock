@@ -24,7 +24,7 @@ _HEDGE_CORR = -0.4  # genuine hedge
 
 
 def _returns(symbol: str, curr_date: str, lookback: int = _LOOKBACK):
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
 
     df = load_ohlcv(symbol, curr_date)
     if df is None or getattr(df, "empty", True):

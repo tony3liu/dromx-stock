@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from langchain_core.tools import tool
 
-from tradingagents.agents.schemas import PortfolioDecision, render_pm_decision
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import PortfolioDecision, render_pm_decision
+from dromx.agents.utils.agent_utils import (
     get_fundamentals,
     get_framework_note_from_state,
     get_instrument_context_from_state,
@@ -25,7 +25,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_source_freshness_discipline,
     get_stock_data,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -156,11 +156,11 @@ def create_portfolio_manager(llm):
         # regime, so the PM knows whom to trust when the lenses disagree.
         scorecard_line = ""
         try:
-            from tradingagents.agents.utils.signal_tracker import (
+            from dromx.agents.utils.signal_tracker import (
                 AnalystScorecard,
                 extract_trend,
             )
-            from tradingagents.dataflows.config import get_config
+            from dromx.dataflows.config import get_config
 
             summary = AnalystScorecard(get_config()).summary(
                 extract_trend(state.get("regime_report", ""))
@@ -214,13 +214,13 @@ Your investment_thesis must close with two explicit elements, because a thesis y
 - **Key question:** the single most important unresolved question this decision hinges on — the one whose answer most determines whether you are right. Anchor this on the pivotal question(s) flagged for this call above, refining it if the risk debate sharpened it.
 - **Falsification trigger:** a concrete, observable event or data point that would prove the thesis wrong (e.g. "two consecutive quarters of decelerating data-center revenue", "a weekly close below $X", "gross margin contracting below Y%"), and how you would change the rating if it occurs. Make it specific enough that a teammate could check it later without your interpretation. **Its timescale must match your time_horizon:** a 3–6 month horizon needs a monthly/weekly-resolution trigger (an earnings print, a weekly close, a multi-week trend), NOT an intraday or next-day move; a multi-week horizon should not hinge on a single day's tick. State the check cadence explicitly (e.g. "re-evaluate after each monthly close").{get_numeric_discipline()}{get_source_freshness_discipline()}{get_language_instruction()}"""
 
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         cfg = get_config()
         agent_cfg = cfg.get("agent_loop") or {}
         pm_loop_enabled = bool(agent_cfg.get("enabled", False))
 
         if pm_loop_enabled:
-            from tradingagents.agents.utils.agent_loop import build_analyst_react_invoker
+            from dromx.agents.utils.agent_loop import build_analyst_react_invoker
 
             def _shift_date(date_str: str, days: int) -> str:
                 from datetime import datetime, timedelta
@@ -273,7 +273,7 @@ Your investment_thesis must close with two explicit elements, because a thesis y
                 e = end_date or _date
                 return get_news.func(_ticker, s, e)
 
-            from tradingagents.agents.utils.browser_tools import web_read, web_search
+            from dromx.agents.utils.browser_tools import web_read, web_search
             tools = [
                 read_analyst_report,
                 _get_stock_data, _get_fundamentals, _get_news,

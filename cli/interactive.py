@@ -17,7 +17,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from tradingagents.agents.utils.report_summarizer import summarize_state
+from dromx.agents.utils.report_summarizer import summarize_state
 from cli.qa_agent import answer_question
 
 console = Console()

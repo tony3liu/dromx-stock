@@ -1,9 +1,9 @@
-"""Append-only markdown decision log for TradingAgents."""
+"""Append-only markdown decision log for DromX."""
 
 import re
 from pathlib import Path
 
-from tradingagents.agents.utils.rating import parse_rating
+from dromx.agents.utils.rating import parse_rating
 
 
 class TradingMemoryLog:

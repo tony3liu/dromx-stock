@@ -1,4 +1,4 @@
-# 策略开发指南 (TradingAgents 选股引擎)
+# 策略开发指南 (DromX 选股引擎)
 
 本文档是 AI 生成选股策略代码的完整参考。每个策略是一个独立的 Python 文件，
 只 `import polars as pl`，声明 `META` 元数据 + 一个 `filter(df, params) -> pl.Expr`

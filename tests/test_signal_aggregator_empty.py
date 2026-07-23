@@ -6,7 +6,7 @@ not counted in the consensus; the remaining lenses still produce a call.
 
 from __future__ import annotations
 
-from tradingagents.agents.analysts.signal_aggregator import (
+from dromx.agents.analysts.signal_aggregator import (
     aggregate_signals,
     create_signal_aggregator,
 )

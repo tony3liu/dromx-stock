@@ -217,7 +217,7 @@ export function RunWorkbench({ runId, ticker, onOpenRun, onStatusSettled }: { ru
     setPdfBusy(true);
     setPdfErr(null);
     try {
-      const fn = `TradingAgents_${(tk ?? runId).replace(/[^\w.-]/g, "_")}_${date ?? ""}.pdf`;
+      const fn = `DromX_${(tk ?? runId).replace(/[^\w.-]/g, "_")}_${date ?? ""}.pdf`;
       await api.downloadReportPdf(runId, fn);
     } catch (e) {
       setPdfErr(e instanceof Error ? e.message : "报告生成失败");

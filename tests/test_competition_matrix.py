@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tradingagents.agents.schemas.analysts import (
+from dromx.agents.schemas.analysts import (
     AnalystDirection,
     IndustryPhase,
     IndustryReport,

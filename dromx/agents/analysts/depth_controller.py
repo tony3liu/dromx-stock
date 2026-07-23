@@ -10,13 +10,13 @@ graph can route to the Re-Analysis node when an event drove a deep_dive.
 
 from __future__ import annotations
 
-from tradingagents.agents.schemas import DepthDecision, render_depth_decision
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.schemas import DepthDecision, render_depth_decision
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )

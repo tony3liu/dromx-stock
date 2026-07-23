@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from tradingagents.agents.analysts.depth_controller import create_depth_controller
-from tradingagents.agents.schemas import DepthDecision
+from dromx.agents.analysts.depth_controller import create_depth_controller
+from dromx.agents.schemas import DepthDecision
 
 
 def _state(**over):

@@ -1,11 +1,11 @@
 """Notification config + dispatch + API (v0.4.0).
 
 A thin web-layer wrapper over the free notification adapters in
-``tradingagents.services``:
+``dromx.services``:
   - system pop-up (``notify_adapter``)
   - Feishu webhook, text + card (``webhook_adapter``)
 
-Config is stored as one JSON file at ``~/.tradingagents/notify.json`` (mirrors
+Config is stored as one JSON file at ``~/.dromx/notify.json`` (mirrors
 ``store.py``'s single-file, no-database approach). ``alert()`` is the single
 dispatch entry the rest of the backend calls (e.g. the on-complete analysis
 hook); it fans out to whichever channels are enabled/configured and never
@@ -22,12 +22,12 @@ from pathlib import Path
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from tradingagents.services import notify_adapter, webhook_adapter
+from dromx.services import notify_adapter, webhook_adapter
 from webapp.backend import auth
 
-logger = logging.getLogger("tradingagents.web.notify")
+logger = logging.getLogger("dromx.web.notify")
 
-_CONFIG_PATH = Path(os.path.expanduser("~")) / ".tradingagents" / "notify.json"
+_CONFIG_PATH = Path(os.path.expanduser("~")) / ".dromx" / "notify.json"
 
 _DEFAULT_CONFIG = {
     "system": {"enabled": True},
@@ -157,7 +157,7 @@ def get_channels(_: None = Depends(auth.require_auth)) -> dict:
 def test_notify(req: TestRequest, _: None = Depends(auth.require_auth)) -> dict:
     """Send a test notification through the requested (or all) channels."""
     results = alert(
-        "TradingAgents 测试通知",
+        "DromX 测试通知",
         "这是一条测试通知，说明该渠道已配置成功。",
         channels=req.channels,
     )

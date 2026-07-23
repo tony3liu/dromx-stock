@@ -7,7 +7,7 @@ import pandas as pd
 import polars as pl
 import pytest
 
-BUILTIN_DIR = __import__("pathlib").Path(__file__).resolve().parents[1] / "tradingagents" / "strategy" / "builtin"
+BUILTIN_DIR = __import__("pathlib").Path(__file__).resolve().parents[1] / "dromx" / "strategy" / "builtin"
 
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ def _zt_response(pool):
 @pytest.mark.unit
 class TestLimitUpPool:
     def test_normalize_symbol_and_fields(self):
-        from tradingagents.dataflows import eastmoney_limitup as lu
+        from dromx.dataflows import eastmoney_limitup as lu
 
         pool = [
             {"c": "603137", "m": 1, "n": "恒尚节能", "p": 5000, "zdp": 10.0,
@@ -41,19 +41,19 @@ class TestLimitUpPool:
         assert out["000656.SZ"]["hybk"] == "房地产开"
 
     def test_empty_pool(self):
-        from tradingagents.dataflows import eastmoney_limitup as lu
+        from dromx.dataflows import eastmoney_limitup as lu
 
         with mock.patch.object(lu._SESSION, "get", return_value=_zt_response([])):
             assert lu.fetch_limit_up_pool(date(2026, 7, 6)) == {}
 
     def test_network_failure_degrades_to_empty(self):
-        from tradingagents.dataflows import eastmoney_limitup as lu
+        from dromx.dataflows import eastmoney_limitup as lu
 
         with mock.patch.object(lu._SESSION, "get", side_effect=Exception("boom")):
             assert lu.fetch_limit_up_pool(date(2026, 7, 6)) == {}
 
     def test_limit_down_pool(self):
-        from tradingagents.dataflows import eastmoney_limitup as lu
+        from dromx.dataflows import eastmoney_limitup as lu
 
         pool = [{"c": "605598", "m": 1, "n": "上海港湾", "zdp": -10.0, "oc": 9, "days": 1, "hybk": "专业工程"}]
         with mock.patch.object(lu._SESSION, "get", return_value=_zt_response(pool)):
@@ -84,13 +84,13 @@ class TestAdapterLimitUpInjection:
         ]
 
     def test_cn_injects_limit_up_columns(self):
-        from tradingagents.strategy.data_adapter import DataAdapter
+        from dromx.strategy.data_adapter import DataAdapter
 
         pool = {"600001.SS": {"consecutive": 3, "broken": 1}}
         adapter = DataAdapter(max_candidates=10, use_cache=False)
-        with mock.patch("tradingagents.strategy.data_adapter.fetch_universe_snapshot", return_value=self._snapshot()), \
-             mock.patch("tradingagents.dataflows.stockstats_utils.load_ohlcv", return_value=_synthetic_ohlcv()), \
-             mock.patch("tradingagents.dataflows.eastmoney_limitup.fetch_limit_up_pool", return_value=pool):
+        with mock.patch("dromx.strategy.data_adapter.fetch_universe_snapshot", return_value=self._snapshot()), \
+             mock.patch("dromx.dataflows.stockstats_utils.load_ohlcv", return_value=_synthetic_ohlcv()), \
+             mock.patch("dromx.dataflows.eastmoney_limitup.fetch_limit_up_pool", return_value=pool):
             df = adapter.load_universe("cn", date(2026, 7, 6))
         assert "signal_limit_up" in df.columns and "consecutive_limit_ups" in df.columns
         rec = {r["symbol"]: r for r in df.to_dicts()}
@@ -100,24 +100,24 @@ class TestAdapterLimitUpInjection:
         assert rec["000002.SZ"]["consecutive_limit_ups"] == 0
 
     def test_non_cn_does_not_inject(self):
-        from tradingagents.strategy.data_adapter import DataAdapter
+        from dromx.strategy.data_adapter import DataAdapter
 
         snap = [{"symbol": "00700.HK", "name": "T", "close": 400.0, "change_pct": 5.0, "market": "hk"}]
         adapter = DataAdapter(max_candidates=10, use_cache=False)
-        with mock.patch("tradingagents.strategy.data_adapter.fetch_universe_snapshot", return_value=snap), \
-             mock.patch("tradingagents.dataflows.stockstats_utils.load_ohlcv", return_value=_synthetic_ohlcv()), \
-             mock.patch("tradingagents.dataflows.eastmoney_limitup.fetch_limit_up_pool") as fetch:
+        with mock.patch("dromx.strategy.data_adapter.fetch_universe_snapshot", return_value=snap), \
+             mock.patch("dromx.dataflows.stockstats_utils.load_ohlcv", return_value=_synthetic_ohlcv()), \
+             mock.patch("dromx.dataflows.eastmoney_limitup.fetch_limit_up_pool") as fetch:
             df = adapter.load_universe("hk", date(2026, 7, 6))
         fetch.assert_not_called()  # HK must not hit the A-share pool
         assert "signal_limit_up" not in df.columns
 
     def test_pool_failure_yields_all_false(self):
-        from tradingagents.strategy.data_adapter import DataAdapter
+        from dromx.strategy.data_adapter import DataAdapter
 
         adapter = DataAdapter(max_candidates=10, use_cache=False)
-        with mock.patch("tradingagents.strategy.data_adapter.fetch_universe_snapshot", return_value=self._snapshot()), \
-             mock.patch("tradingagents.dataflows.stockstats_utils.load_ohlcv", return_value=_synthetic_ohlcv()), \
-             mock.patch("tradingagents.dataflows.eastmoney_limitup.fetch_limit_up_pool", side_effect=RuntimeError("down")):
+        with mock.patch("dromx.strategy.data_adapter.fetch_universe_snapshot", return_value=self._snapshot()), \
+             mock.patch("dromx.dataflows.stockstats_utils.load_ohlcv", return_value=_synthetic_ohlcv()), \
+             mock.patch("dromx.dataflows.eastmoney_limitup.fetch_limit_up_pool", side_effect=RuntimeError("down")):
             df = adapter.load_universe("cn", date(2026, 7, 6))
         assert df.get_column("signal_limit_up").to_list() == [False, False]
 
@@ -149,7 +149,7 @@ def _cn_frame():
 @pytest.mark.unit
 class TestCNStrategies:
     def _engine(self):
-        from tradingagents.strategy.engine import StrategyEngine
+        from dromx.strategy.engine import StrategyEngine
         return StrategyEngine(lambda d: _cn_frame(), [BUILTIN_DIR], market="cn")
 
     def test_all_four_cn_strategies_loaded(self):

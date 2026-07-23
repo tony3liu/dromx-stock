@@ -14,9 +14,9 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-from tradingagents.dataflows import interface, stockstats_utils
-from tradingagents.dataflows.config import set_config
-from tradingagents.dataflows.symbol_utils import NoMarketDataError
+from dromx.dataflows import interface, stockstats_utils
+from dromx.dataflows.config import set_config
+from dromx.dataflows.symbol_utils import NoMarketDataError
 
 
 @pytest.mark.unit

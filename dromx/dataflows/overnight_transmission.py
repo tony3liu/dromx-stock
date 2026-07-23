@@ -71,7 +71,7 @@ def _listing_market(ticker: str) -> str:
 
 def _close_series(symbol: str, curr_date: str):
     """Close series up to curr_date via the vendor-routed ``load_ohlcv``, or None."""
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
     import pandas as pd
 
     df = load_ohlcv(symbol, curr_date)
@@ -105,7 +105,7 @@ def _ohlc_row(symbol: str, curr_date: str):
     / engulfing reversal that a single close-to-close % hides). Vendor path
     only — the reference is normally US-listed, which Tencent covers.
     """
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
     import pandas as pd
 
     df = load_ohlcv(symbol, curr_date)
@@ -158,8 +158,8 @@ def _underlying_returns_1d(symbol: str, curr_date: str) -> float | None:
 
     # 2. explicit yfinance fallback for cross-market underlyings
     def _yf():
-        from tradingagents.dataflows.stockstats_utils import yf_retry
-        from tradingagents.dataflows.symbol_utils import normalize_symbol
+        from dromx.dataflows.stockstats_utils import yf_retry
+        from dromx.dataflows.symbol_utils import normalize_symbol
         import yfinance as yf
         import pandas as pd
 
@@ -287,10 +287,10 @@ def build_overnight_transmission(
     fetch failed. Best-effort throughout; each segment degrades independently.
     """
     if config is None:
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
         config = get_config()
 
-    from tradingagents.dataflows.etf_data import resolve_etf_structure
+    from dromx.dataflows.etf_data import resolve_etf_structure
 
     structure = _safe(lambda: resolve_etf_structure(ticker, str(curr_date), llm=llm))
     if structure is None or not structure.is_etf:

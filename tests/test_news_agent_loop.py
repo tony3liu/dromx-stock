@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import tradingagents.agents.analysts.news_analyst as na
-from tradingagents.agents.analysts.news_analyst import _extract_market, create_news_analyst
-from tradingagents.dataflows.config import set_config
-from tradingagents.default_config import DEFAULT_CONFIG
+import dromx.agents.analysts.news_analyst as na
+from dromx.agents.analysts.news_analyst import _extract_market, create_news_analyst
+from dromx.dataflows.config import set_config
+from dromx.default_config import DEFAULT_CONFIG
 
 
 def _per_analyst_on():
@@ -65,7 +65,7 @@ def test_v03_fallback_returns_report(monkeypatch):
 def test_v04_branch_calls_run_loop(monkeypatch):
     cfg = dict(DEFAULT_CONFIG)
     cfg["agent_loop"] = {"enabled": True, "analyst_max_iterations": 5, "per_analyst": _per_analyst_on()}
-    cfg["skills"] = {"enabled": True, "path": "~/.tradingagents/skills/",
+    cfg["skills"] = {"enabled": True, "path": "~/.dromx/skills/",
                      "auto_load": True, "max_per_analyst": 5,
                      "dynamic_request": True, "max_dynamic_loads": 2}
     set_config(cfg)

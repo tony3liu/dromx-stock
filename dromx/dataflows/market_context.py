@@ -36,7 +36,7 @@ def _safe(fn, default=None):
 
 def _returns_1d_5d(symbol: str, curr_date: str) -> tuple[float | None, float | None]:
     """(1-day %, 5-day %) close-to-close for ``symbol`` on/before curr_date, or (None, None)."""
-    from tradingagents.dataflows.stockstats_utils import load_ohlcv
+    from dromx.dataflows.stockstats_utils import load_ohlcv
 
     df = load_ohlcv(symbol, curr_date)
     if df is None or df.empty or "Close" not in df.columns:
@@ -88,7 +88,7 @@ def build_market_context(ticker: str, curr_date: str, config: dict | None = None
     config). Peers reuse ``peer_tickers`` — the same list the analysts already use.
     """
     if config is None:
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
 
         config = get_config()
 

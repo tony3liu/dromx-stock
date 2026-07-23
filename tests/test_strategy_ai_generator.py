@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from tradingagents.strategy.ai_generator import AIStrategyGenerator
+from dromx.strategy.ai_generator import AIStrategyGenerator
 
 _GOOD_STRATEGY = '''
 """RSI 超卖反弹"""

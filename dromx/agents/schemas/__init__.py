@@ -1,6 +1,6 @@
 """Structured-output Pydantic schemas for agents (split into a package by domain).
 
-Re-exports every symbol so ``from tradingagents.agents.schemas import X`` keeps
+Re-exports every symbol so ``from dromx.agents.schemas import X`` keeps
 working exactly as before the split. See the per-domain submodules for the
 definitions.
 """

@@ -19,7 +19,7 @@ def _last_close(ticker: str, curr_date: str) -> float | None:
     try:
         from datetime import date as _date
 
-        from tradingagents.dataflows.stockstats_utils import load_ohlcv
+        from dromx.dataflows.stockstats_utils import load_ohlcv
 
         df = load_ohlcv(ticker, (curr_date or "").strip() or _date.today().isoformat())
         if df is None or getattr(df, "empty", True):

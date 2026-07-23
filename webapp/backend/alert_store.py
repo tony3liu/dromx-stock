@@ -1,7 +1,7 @@
 """Alert history store (v0.4.0 Phase 2) — JSONL append + rolling prune.
 
 Ported from TickFlow's ``alert_store.py``. Each triggered alert event is one JSON
-line appended to ``~/.tradingagents/alerts.jsonl``. Reads load the whole file
+line appended to ``~/.dromx/alerts.jsonl``. Reads load the whole file
 (bounded by the prune caps) and filter in memory.
 
 Prune policy (intersection): keep records from the last MAX_DAYS AND at most
@@ -19,7 +19,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-_PATH = Path(os.path.expanduser("~")) / ".tradingagents" / "alerts.jsonl"
+_PATH = Path(os.path.expanduser("~")) / ".dromx" / "alerts.jsonl"
 
 MAX_DAYS = 7
 MAX_RECORDS = 5000

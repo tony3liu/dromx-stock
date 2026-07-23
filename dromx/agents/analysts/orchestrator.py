@@ -15,16 +15,16 @@ is false the node is not wired in at all (setup.py v0.3 branch).
 
 from __future__ import annotations
 
-from tradingagents.agents.schemas import (
+from dromx.agents.schemas import (
     OrchestrationPlan,
     render_orchestration_plan,
 )
-from tradingagents.agents.utils.agent_utils import (
+from dromx.agents.utils.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,
 )
-from tradingagents.agents.utils.structured import (
+from dromx.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -49,8 +49,8 @@ def create_orchestrator(llm):
     structured_llm = bind_structured(llm, OrchestrationPlan, "Orchestrator")
 
     def orchestrator_node(state):
-        from tradingagents.dataflows.config import get_config
-        from tradingagents.agents.utils.signal_tracker import (
+        from dromx.dataflows.config import get_config
+        from dromx.agents.utils.signal_tracker import (
             AnalystScorecard,
             extract_trend,
         )
@@ -91,7 +91,7 @@ def create_orchestrator(llm):
         # Available skills so the LLM only lists real names, not invented ones.
         available_skills_block = ""
         try:
-            from tradingagents.agents.utils.skills import SkillLoader
+            from dromx.agents.utils.skills import SkillLoader
             loader = SkillLoader(cfg)
             by_analyst = {
                 ak: [s.name for s in ss] for ak, ss in loader.load_all().items() if ss

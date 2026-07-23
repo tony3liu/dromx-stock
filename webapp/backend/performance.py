@@ -73,7 +73,7 @@ def _forward_return(ticker: str, trade_date: str, holding_days: int) -> tuple[fl
     ``None`` when fewer than 2 forward bars exist (too recent / delisted).
     """
     try:
-        from tradingagents.dataflows.stockstats_utils import load_ohlcv
+        from dromx.dataflows.stockstats_utils import load_ohlcv
 
         df = load_ohlcv(ticker, datetime.now().strftime("%Y-%m-%d"))
         if df is None or getattr(df, "empty", True):

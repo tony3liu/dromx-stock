@@ -20,13 +20,13 @@ from __future__ import annotations
 
 import logging
 
-from tradingagents.agents.schemas import (
+from dromx.agents.schemas import (
     AnalystSignal,
     SignalAggregation,
     _consensus_band,
     render_signal_aggregation,
 )
-from tradingagents.agents.utils.rating import (
+from dromx.agents.utils.rating import (
     confidence_weight,
     direction_score,
     parse_analyst_signal,
@@ -210,11 +210,11 @@ def create_signal_aggregator():
     """
 
     def signal_aggregator_node(state):
-        from tradingagents.agents.utils.signal_tracker import (
+        from dromx.agents.utils.signal_tracker import (
             AnalystScorecard,
             extract_trend,
         )
-        from tradingagents.dataflows.config import get_config
+        from dromx.dataflows.config import get_config
 
         notes: dict[str, str] = {}
         weights: dict[str, float] = {}
