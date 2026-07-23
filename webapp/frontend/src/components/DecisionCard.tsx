@@ -1,7 +1,9 @@
-import { TrendingUp, TrendingDown, Minus, Shield, Target, Clock } from "lucide-react";
+import { TrendingUp, Shield, Target, Clock } from "lucide-react";
 import { parseDecision } from "../lib/parse";
 import { cn, dirClasses, ratingCn, ratingDir } from "../lib/format";
 import type { Dir } from "../lib/format";
+import { Mascot } from "./Mascot";
+import { decisionPose } from "../lib/mascot";
 
 /** Hero decision card: a full-bleed directional gradient band carrying the
  *  verdict as display type, then the executive summary and the key numbers.
@@ -36,27 +38,32 @@ export function DecisionCard({ decisionMd, rating }: { decisionMd: string; ratin
       className="animate-pop overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)]"
       style={{ boxShadow: "var(--shadow-card)" }}
     >
-      {/* verdict band — directional gradient + watermark arrow */}
+      {/* verdict band — directional gradient + mascot reaction */}
       <div
         className="relative overflow-hidden px-6 pb-6 pt-5"
         style={{ background: `linear-gradient(165deg, ${hero.tint} 0%, var(--color-surface) 82%)` }}
       >
-        <hero.icon
-          size={120}
-          strokeWidth={1.2}
-          className={cn("pointer-events-none absolute -right-4 -top-4 opacity-[0.12]", accent.text)}
-        />
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-          最终决策
-        </div>
-        <div className={cn("mt-2.5 text-[38px] font-bold leading-none tracking-tight", accent.text)}>
-          {verdictCn}
-        </div>
-        {verdictRaw && (
-          <div className="tnum mt-2 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
-            {verdictRaw}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+              最终决策
+            </div>
+            <div className={cn("mt-2.5 text-[38px] font-bold leading-none tracking-tight", accent.text)}>
+              {verdictCn}
+            </div>
+            {verdictRaw && (
+              <div className="tnum mt-2 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+                {verdictRaw}
+              </div>
+            )}
           </div>
-        )}
+          <Mascot
+            pose={decisionPose(effectiveRating)}
+            animation="float"
+            size={72}
+            className="shrink-0"
+          />
+        </div>
       </div>
 
       <div className="px-6 py-5">
@@ -86,8 +93,8 @@ export function DecisionCard({ decisionMd, rating }: { decisionMd: string; ratin
   );
 }
 
-const HERO: Record<Dir, { tint: string; icon: typeof TrendingUp }> = {
-  bull: { tint: "var(--color-brand-tint)", icon: TrendingUp },
-  bear: { tint: "var(--color-bear-tint)", icon: TrendingDown },
-  neutral: { tint: "var(--color-warn-tint)", icon: Minus },
+const HERO: Record<Dir, { tint: string }> = {
+  bull: { tint: "var(--color-brand-tint)" },
+  bear: { tint: "var(--color-bear-tint)" },
+  neutral: { tint: "var(--color-warn-tint)" },
 };

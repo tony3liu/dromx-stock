@@ -214,6 +214,16 @@ body::after {
   50% { transform: translateY(-6px); }
 }
 .animate-float { animation: float 4s ease-in-out infinite; }
+
+/* Mascot "bob" — a bouncy little celebration / excitement loop. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-6px) rotate(-2deg) scale(1.02); }
+  50% { transform: translateY(-10px) rotate(2deg) scale(1.04); }
+  75% { transform: translateY(-4px) rotate(-1deg) scale(1.02); }
+}
+.animate-bob { animation: bob 1.8s ease-in-out infinite; }
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }

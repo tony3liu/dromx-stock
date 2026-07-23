@@ -17,6 +17,7 @@ import { REPORT_SECTIONS, SECTION_CN } from "../api/types";
 import { api } from "../api/client";
 import { buildReportMarkdown, copyText, downloadText } from "../lib/export";
 import { cn } from "../lib/format";
+import { MascotScene } from "./Mascot";
 
 const DECISION_KEY = "final_trade_decision";
 const label = (key: string) => SECTION_CN[key] ?? key;
@@ -344,13 +345,17 @@ export function RunWorkbench({ runId, ticker, onOpenRun, onStatusSettled }: { ru
         )}
 
         {ordered.length === 0 && !decisionMd && !s.error && (
-          <div className="mx-auto max-w-3xl space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton h-28 w-full" />
-            ))}
-            <p className="pt-2 text-center text-sm text-[var(--color-ink-faint)]">
-              分析师团队正在工作，结果将逐个阶段呈现…
-            </p>
+          <div
+            className="mx-auto max-w-md rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-10"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <MascotScene
+              pose="working"
+              animation="float"
+              size={180}
+              title="分析师团队正在工作"
+              body="Dromy 会跟随 19 节点流水线，把每阶段结论逐个呈现。"
+            />
           </div>
         )}
 

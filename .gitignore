@@ -229,3 +229,8 @@ reports/
 scripts/
 webapp/frontend/scripts/
 webapp/frontend/shots/
+docs/requirements/browser-integration.md
+docs/requirements/PRD-v0.3.0-strategy-engine.md
+.gitignore
+docs/requirements/PRD.md
+docs/requirements/PRD-v0.4-agentic-pipeline.md

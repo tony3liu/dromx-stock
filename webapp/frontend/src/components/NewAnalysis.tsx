@@ -7,6 +7,7 @@ import { api } from "../api/client";
 import { ANALYSTS, DEPTHS } from "../api/types";
 import { cn } from "../lib/format";
 import { Input } from "./ui/Input";
+import { MascotScene } from "./Mascot";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -254,6 +255,21 @@ export function NewAnalysis({ onStarted }: { onStarted: (id: string) => void }) 
         {submitting ? "投研团队启动中…" : "开始分析"}
         {!submitting && <ArrowRight size={17} className="transition-transform group-hover:translate-x-0.5" />}
       </button>
+
+      {submitting && (
+        <div
+          className="mt-5 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-8"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <MascotScene
+            pose="working"
+            animation="float"
+            size={160}
+            title="Dromy 正在召集分析师团队…"
+            body="初始化 19 节点投研流水线，随后自动跳转到报告页。"
+          />
+        </div>
+      )}
     </div>
   );
 }
