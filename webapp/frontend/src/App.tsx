@@ -11,6 +11,7 @@ import { HedgeView } from "./components/HedgeView";
 import { BacktestView } from "./components/BacktestView";
 import { Screener } from "./components/Screener";
 import { Monitor } from "./components/Monitor";
+import { Market } from "./components/Market";
 import { Settings } from "./components/Settings";
 import { Landing } from "./components/Landing";
 import { Login } from "./components/Login";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/app/run/:id" element={<RunRoute />} />
           <Route path="/app/screener" element={<ScreenerBridge />} />
           <Route path="/app/monitor" element={<Monitor />} />
+          <Route path="/app/market" element={<Market />} />
           <Route path="/app/compare" element={<CompareBridge />} />
           <Route path="/app/performance" element={<PerformancePanel />} />
           <Route path="/app/hedge" element={<HedgeView />} />
@@ -97,6 +99,7 @@ function Shell() {
         backtestActive={pathname === "/app/backtest"}
         screenerActive={pathname === "/app/screener"}
         monitorActive={pathname === "/app/monitor"}
+        marketActive={pathname === "/app/market"}
         settingsActive={pathname === "/app/settings"}
         collapsed={navCollapsed}
         onToggle={() => setNavCollapsed((v) => !v)}
@@ -108,6 +111,7 @@ function Shell() {
         onBacktest={() => navigate("/app/backtest")}
         onScreener={() => navigate("/app/screener")}
         onMonitor={() => navigate("/app/monitor")}
+        onMarket={() => navigate("/app/market")}
         onSettings={() => navigate("/app/settings")}
         onDeleted={onDeleted}
       />

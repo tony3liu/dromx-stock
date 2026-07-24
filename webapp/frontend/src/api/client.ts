@@ -1,5 +1,5 @@
 // Thin REST client for the backend. All paths go through the Vite /api proxy.
-import type { AIGenerateResult, AlertEvent, BacktestEstimate, BacktestRecord, CreateRunRequest, FactorExposure, HedgeReport, Job, Market, MonitorRule, NotifyChannels, NotifySettings, PerformanceReport, PriceSeries, RunRecord, RunSummary, SizingReport, StrategyListResponse, StrategyMeta, StrategyRunResult } from "./types";
+import type { AIGenerateResult, AlertEvent, BacktestEstimate, BacktestRecord, CreateRunRequest, FactorExposure, HedgeReport, IntradaySeries, Job, Market, MonitorRule, NotifyChannels, NotifySettings, PerformanceReport, PriceSeries, RunRecord, RunSummary, SizingReport, StrategyListResponse, StrategyMeta, StrategyRunResult } from "./types";
 import { authHeaders, notifyUnauthorized } from "../lib/auth";
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
@@ -73,6 +73,11 @@ export const api = {
   price: (ticker: string, date?: string, days = 120) =>
     jsonFetch<PriceSeries>(
       `/api/price/${encodeURIComponent(ticker)}?days=${days}${date ? `&date=${encodeURIComponent(date)}` : ""}`,
+    ),
+
+  intradayPrice: (ticker: string, interval = "5m") =>
+    jsonFetch<IntradaySeries>(
+      `/api/price/intraday/${encodeURIComponent(ticker)}?interval=${interval}`,
     ),
 
   ask: (id: string, question: string, history: [string, string][]) =>

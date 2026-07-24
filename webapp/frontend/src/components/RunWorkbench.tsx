@@ -7,7 +7,7 @@ import { RatingBadge } from "./RatingBadge";
 import { DecisionCard } from "./DecisionCard";
 import { ForecastTimeline } from "./ForecastTimeline";
 import { SignalChart } from "./SignalChart";
-import { PriceChart } from "./PriceChart";
+import { KlineChart } from "./KlineChart";
 import { ScenarioChart } from "./ScenarioChart";
 import { ResearchPanel } from "./ResearchPanel";
 import { SizingPanel } from "./SizingPanel";
@@ -411,7 +411,7 @@ export function RunWorkbench({ runId, ticker, onOpenRun, onStatusSettled }: { ru
               {decisionMd && (
                 <DecisionCard decisionMd={decisionMd} rating={s.rating} />
               )}
-              {tk && <PriceChart ticker={tk} date={date} />}
+              {tk && <KlineChart ticker={tk} date={date} />}
               {tk && <SizingPanel runId={runId} ticker={tk} date={date} />}
               {tk && <FactorPanel runId={runId} />}
               {tk && <ResearchPanel ticker={tk} date={date} />}

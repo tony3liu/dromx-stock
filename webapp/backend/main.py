@@ -392,6 +392,102 @@ def price(ticker: str, date: str | None = None, days: int = 120,
         return {"ticker": ticker, "points": []}
 
 
+@app.get("/api/price/intraday/{ticker}")
+def price_intraday(ticker: str, interval: str = "5m",
+                   _: None = Depends(auth.require_auth)) -> dict:
+    """Intraday OHLC for real-time charting (5-minute bars).
+
+    Data sources:
+    - A-shares / A-share indices: mootdx (TongDaXin TCP, real-time, China IP only)
+    - US / HK stocks & indices: yfinance (interval="5m", ~15min delayed)
+
+    Degrades to ``{"points": []}`` on any vendor failure.
+    """
+    ticker = ticker.strip()
+    try:
+        from datetime import date as _date
+
+        import pandas as pd
+        import yfinance as yf
+
+        from dromx.dataflows.mootdx_cn import _normalize_cn, _client
+        from dromx.dataflows.errors import VendorRateLimitError, NoMarketDataError
+        from dromx.dataflows.symbol_utils import normalize_symbol
+
+        # Try mootdx for A-shares first (real-time, no rate limit)
+        try:
+            code = _normalize_cn(ticker)
+            client = _client()
+            # category=0 -> 5-minute bars
+            bars = client.bars(symbol=code, category=0, offset=240)
+            if bars is not None and len(bars) > 0:
+                df = pd.DataFrame(bars)
+                out = pd.DataFrame({
+                    "datetime": pd.to_datetime(df["datetime"], errors="coerce"),
+                    "open": pd.to_numeric(df.get("open"), errors="coerce"),
+                    "high": pd.to_numeric(df.get("high"), errors="coerce"),
+                    "low": pd.to_numeric(df.get("low"), errors="coerce"),
+                    "close": pd.to_numeric(df.get("close"), errors="coerce"),
+                    "volume": pd.to_numeric(df.get("vol"), errors="coerce"),
+                })
+                out = out.dropna(subset=["datetime", "close"]).sort_values("datetime")
+                points = [
+                    {
+                        "time": int(row.datetime.timestamp()),
+                        "open": round(float(row.open), 4),
+                        "high": round(float(row.high), 4),
+                        "low": round(float(row.low), 4),
+                        "close": round(float(row.close), 4),
+                    }
+                    for row in out.itertuples()
+                ]
+                return {"ticker": ticker, "interval": interval, "points": points}
+        except (VendorRateLimitError, NoMarketDataError, ImportError):
+            pass  # fall through to yfinance
+
+        # yfinance for US / HK / indices
+        canonical = normalize_symbol(ticker)
+        df = yf.download(
+            canonical,
+            period="1d",
+            interval=interval,
+            progress=False,
+            auto_adjust=True,
+            multi_level_index=False,
+        )
+        if df is None or df.empty:
+            return {"ticker": ticker, "points": []}
+
+        df = df.reset_index()
+        # yfinance intraday uses "Datetime" or "Date" as the index column name
+        dcol = "Datetime" if "Datetime" in df.columns else "Date"
+        points = []
+        for _, row in df.iterrows():
+            try:
+                close = float(row["Close"])
+            except (TypeError, ValueError, KeyError):
+                continue
+            dt = row[dcol]
+            if hasattr(dt, "timestamp"):
+                ts = int(dt.timestamp())
+            else:
+                ts = int(pd.Timestamp(dt).timestamp())
+            pt = {
+                "time": ts,
+                "close": round(close, 4),
+            }
+            for k, src in (("open", "Open"), ("high", "High"), ("low", "Low")):
+                try:
+                    pt[k] = round(float(row[src]), 4)
+                except (TypeError, ValueError, KeyError):
+                    pass
+            points.append(pt)
+        return {"ticker": ticker, "interval": interval, "points": points}
+    except Exception as exc:  # noqa: BLE001 — chart is best-effort
+        logger.warning("price_intraday(%s) failed: %s", ticker, exc)
+        return {"ticker": ticker, "points": []}
+
+
 @app.post("/api/runs/{run_id}/qa", response_model=QAResponse)
 def qa(run_id: str, req: QARequest, _: None = Depends(auth.require_auth)) -> QAResponse:
     rec = store.load_run(run_id)

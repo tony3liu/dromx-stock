@@ -46,9 +46,23 @@ export interface PricePoint {
   low?: number;
 }
 
+export interface IntradayPoint {
+  time: number; // Unix timestamp (seconds)
+  close: number;
+  open?: number;
+  high?: number;
+  low?: number;
+}
+
 export interface PriceSeries {
   ticker: string;
   points: PricePoint[];
+}
+
+export interface IntradaySeries {
+  ticker: string;
+  interval: string;
+  points: IntradayPoint[];
 }
 
 // SSE event shapes emitted by backend/runner.py

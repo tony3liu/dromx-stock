@@ -24,6 +24,7 @@ export function Sidebar({
   onBacktest,
   onScreener,
   onMonitor,
+  onMarket,
   onSettings,
   onHome,
   onDeleted,
@@ -33,6 +34,7 @@ export function Sidebar({
   backtestActive,
   screenerActive,
   monitorActive,
+  marketActive,
   settingsActive,
   refreshKey,
   collapsed,
@@ -47,6 +49,7 @@ export function Sidebar({
   onBacktest: () => void;
   onScreener: () => void;
   onMonitor: () => void;
+  onMarket: () => void;
   onSettings: () => void;
   onHome: () => void;
   onDeleted: (id: string) => void;
@@ -56,6 +59,7 @@ export function Sidebar({
   backtestActive: boolean;
   screenerActive: boolean;
   monitorActive: boolean;
+  marketActive: boolean;
   settingsActive: boolean;
   refreshKey: number;
   collapsed: boolean;
@@ -101,6 +105,7 @@ export function Sidebar({
   const NAV: NavEntry[] = [
     { key: "screener", icon: <Search size={16} />, label: "选股", active: screenerActive, onClick: onScreener, group: "工作区" },
     { key: "monitor", icon: <Bell size={16} />, label: "监控中心", active: monitorActive, onClick: onMonitor, group: "工作区" },
+    { key: "market", icon: <TrendingUp size={16} />, label: "大盘", active: marketActive, onClick: onMarket, group: "工作区" },
     {
       key: "compare", icon: <GitCompareArrows size={16} />, label: "多标的对比",
       active: compareActive, onClick: onCompare, group: "工作区",
