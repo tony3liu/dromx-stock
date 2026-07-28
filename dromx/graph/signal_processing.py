@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from dromx.agents.utils.rating import parse_rating
+from dromx.core.rating import parse_rating
 
 
 class SignalProcessor:

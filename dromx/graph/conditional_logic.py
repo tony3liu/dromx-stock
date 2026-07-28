@@ -1,6 +1,6 @@
 # DromX/graph/conditional_logic.py
 
-from dromx.agents.utils.agent_states import AgentState
+from dromx.core.agent_states import AgentState
 
 
 class ConditionalLogic:

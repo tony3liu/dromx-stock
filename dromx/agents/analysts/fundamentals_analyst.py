@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from dromx.agents.schemas import FundamentalsReport, render_fundamentals_report
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_balance_sheet,
     get_cashflow,
     get_framework_note_from_state,
@@ -29,7 +29,7 @@ from dromx.agents.utils.agent_utils import (
     get_regime_context_from_state,
     get_source_freshness_discipline,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -109,7 +109,7 @@ def create_fundamentals_analyst(llm):
         )
 
         if loop_enabled:
-            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.core.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="fundamentals",
                 tools=[get_fundamentals, get_income_statement, get_balance_sheet, get_cashflow],

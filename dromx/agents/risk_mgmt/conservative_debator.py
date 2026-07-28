@@ -5,7 +5,7 @@ gone: this specialist writes ONE independent report from the downside-protection
 lens and stops. Risk Consensus reconciles all three risk reports; the PM decides.
 """
 
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,
@@ -47,8 +47,8 @@ Quantify the downside, do not just assert it. Read the ATR / volatility figures 
         from dromx.dataflows.config import get_config
         agent_cfg = (get_config().get("agent_loop") or {})
         if bool(agent_cfg.get("enabled", False)):
-            from dromx.agents.utils.agent_loop import build_analyst_react_invoker
-            from dromx.agents.utils.agent_utils import get_stock_data
+            from dromx.core.agent_loop import build_analyst_react_invoker
+            from dromx.core.agent_utils import get_stock_data
             from dromx.agents.managers.portfolio_manager import position_simulate
             report = build_analyst_react_invoker(
                 llm=llm, tools=[get_stock_data, position_simulate],

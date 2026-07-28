@@ -31,18 +31,18 @@ from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from dromx.agents.schemas import SentimentReport, render_sentiment_report
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_news,
     get_regime_context_from_state,
     get_source_freshness_discipline,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
-from dromx.agents.utils.sentiment_tools import (
+from dromx.tools.data import (
     fetch_reddit_tool,
     fetch_stocktwits_tool,
     fetch_x_posts_tool,
@@ -102,7 +102,7 @@ def create_sentiment_analyst(llm):
         )
 
         if loop_enabled:
-            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.core.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="sentiment",
                 tools=[get_news, fetch_stocktwits_tool, fetch_reddit_tool, fetch_x_posts_tool],

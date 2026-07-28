@@ -30,7 +30,7 @@ from dromx.agents import (
     create_trader,
 )
 from dromx.agents.schemas import selected_analyst_keys
-from dromx.agents.utils.agent_states import AgentState
+from dromx.core.agent_states import AgentState
 
 from .analyst_execution import build_analyst_execution_plan
 from .conditional_logic import ConditionalLogic

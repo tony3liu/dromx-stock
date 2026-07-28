@@ -17,7 +17,7 @@ light structured LLM call with a free-text fallback.
 from __future__ import annotations
 
 from dromx.agents.schemas import EventImpactReport, render_event_impact
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_market_context_from_state,
@@ -26,7 +26,7 @@ from dromx.agents.utils.agent_utils import (
     get_foreign_flow_from_state,
     get_source_freshness_discipline,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )

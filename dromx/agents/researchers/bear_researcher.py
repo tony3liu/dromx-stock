@@ -6,7 +6,7 @@ stops. The Research Manager reads it alongside the Growth & Quality report and
 synthesises once. Multi-angle analysis, no persuasion.
 """
 
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,

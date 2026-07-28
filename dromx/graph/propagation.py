@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from dromx.agents.utils.agent_states import (
+from dromx.core.agent_states import (
     InvestDebateState,
     RiskDebateState,
 )

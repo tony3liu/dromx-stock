@@ -26,7 +26,7 @@ from dromx.agents.schemas import (
     _consensus_band,
     render_signal_aggregation,
 )
-from dromx.agents.utils.rating import (
+from dromx.core.rating import (
     confidence_weight,
     direction_score,
     parse_analyst_signal,
@@ -210,7 +210,7 @@ def create_signal_aggregator():
     """
 
     def signal_aggregator_node(state):
-        from dromx.agents.utils.signal_tracker import (
+        from dromx.core.signal_tracker import (
             AnalystScorecard,
             extract_trend,
         )

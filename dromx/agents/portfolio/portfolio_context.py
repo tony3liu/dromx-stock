@@ -89,7 +89,7 @@ def _identity(ticker: str) -> dict:
     """
     ident: dict = {}
     try:
-        from dromx.agents.utils.agent_utils import resolve_instrument_identity
+        from dromx.core.agent_utils import resolve_instrument_identity
 
         ident = resolve_instrument_identity(ticker) or {}
     except Exception:  # noqa: BLE001 — identity is best-effort

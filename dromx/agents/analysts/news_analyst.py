@@ -17,7 +17,7 @@ from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from dromx.agents.schemas import NewsReport, render_news_report
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_global_news,
     get_instrument_context_from_state,
     get_language_instruction,
@@ -29,7 +29,7 @@ from dromx.agents.utils.agent_utils import (
     get_regime_context_from_state,
     get_source_freshness_discipline,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -213,14 +213,14 @@ def _extract_market(ticker: str) -> str:
 def _run_news_agent_loop(*, llm, cfg, state, ticker, curr_date, system_message):
     """v0.4 path: react agent with news tools + skills; falls back to v0.3 on any failure."""
     from dromx.agents.schemas import orchestrator_skills_for
-    from dromx.agents.utils.agent_loop import build_analyst_react_invoker
-    from dromx.agents.utils.skills import SkillLoader, SkillSelector
-    from dromx.agents.utils.skills.request_tool import make_request_skill_tool
+    from dromx.core.agent_loop import build_analyst_react_invoker
+    from dromx.skills import SkillLoader, SkillSelector
+    from dromx.skills.request_tool import make_request_skill_tool
 
     # Tools the loop can call to verify / deepen claims not grounded in the
     # pre-fetched blocks. The pre-fetch stays (seeds the prompt) so the loop
     # doesn't waste turns re-fetching the baseline.
-    from dromx.agents.utils.browser_tools import web_read, web_search
+    from dromx.browser.tools import web_read, web_search
     tools = [
         get_news,
         get_global_news,

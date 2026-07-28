@@ -13,7 +13,7 @@ from __future__ import annotations
 from langchain_core.tools import tool
 
 from dromx.agents.schemas import PortfolioDecision, render_pm_decision
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_fundamentals,
     get_framework_note_from_state,
     get_instrument_context_from_state,
@@ -25,7 +25,7 @@ from dromx.agents.utils.agent_utils import (
     get_source_freshness_discipline,
     get_stock_data,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -156,7 +156,7 @@ def create_portfolio_manager(llm):
         # regime, so the PM knows whom to trust when the lenses disagree.
         scorecard_line = ""
         try:
-            from dromx.agents.utils.signal_tracker import (
+            from dromx.core.signal_tracker import (
                 AnalystScorecard,
                 extract_trend,
             )
@@ -220,7 +220,7 @@ Your investment_thesis must close with two explicit elements, because a thesis y
         pm_loop_enabled = bool(agent_cfg.get("enabled", False))
 
         if pm_loop_enabled:
-            from dromx.agents.utils.agent_loop import build_analyst_react_invoker
+            from dromx.core.agent_loop import build_analyst_react_invoker
 
             def _shift_date(date_str: str, days: int) -> str:
                 from datetime import datetime, timedelta
@@ -273,7 +273,7 @@ Your investment_thesis must close with two explicit elements, because a thesis y
                 e = end_date or _date
                 return get_news.func(_ticker, s, e)
 
-            from dromx.agents.utils.browser_tools import web_read, web_search
+            from dromx.browser.tools import web_read, web_search
             tools = [
                 read_analyst_report,
                 _get_stock_data, _get_fundamentals, _get_news,

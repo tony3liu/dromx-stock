@@ -21,7 +21,7 @@ from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from dromx.agents.schemas import IndustryReport, render_industry_report
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_fundamentals,
     get_global_news,
     get_instrument_context_from_state,
@@ -31,7 +31,7 @@ from dromx.agents.utils.agent_utils import (
     get_source_freshness_discipline,
     resolve_instrument_identity,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
@@ -142,7 +142,7 @@ Fill the structured fields: direction, confidence, scenarios, industry_phase, co
         )
 
         if loop_enabled:
-            from dromx.agents.utils.agent_loop import build_analyst_loop_invoker
+            from dromx.core.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="industry",
                 tools=[get_news, get_global_news, get_fundamentals],

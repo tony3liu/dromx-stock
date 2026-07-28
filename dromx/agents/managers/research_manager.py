@@ -8,12 +8,12 @@ structured investment plan for the trader.
 from __future__ import annotations
 
 from dromx.agents.schemas import ResearchPlan, render_research_plan
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_instrument_context_from_state,
     get_language_instruction,
     get_regime_context_from_state,
 )
-from dromx.agents.utils.structured import (
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )

@@ -16,15 +16,15 @@ so regex extraction would be brittle) with a free-text fallback.
 from __future__ import annotations
 
 from dromx.agents.schemas import RiskConsensusReport, render_risk_consensus
-from dromx.agents.utils.agent_utils import (
+from dromx.core.agent_utils import (
     get_framework_note_from_state,
     get_instrument_context_from_state,
     get_language_instruction,
     get_numeric_discipline,
     get_regime_context_from_state,
 )
-from dromx.agents.utils.rating import parse_scenarios, suggest_position_size
-from dromx.agents.utils.structured import (
+from dromx.core.rating import parse_scenarios, suggest_position_size
+from dromx.core.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )

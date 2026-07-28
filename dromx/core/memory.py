@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-from dromx.agents.utils.rating import parse_rating
+from dromx.core.rating import parse_rating
 
 
 class TradingMemoryLog:

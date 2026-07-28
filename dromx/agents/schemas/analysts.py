@@ -561,7 +561,7 @@ def _render_scenarios(scenarios: list) -> list[str]:
     """
     if not scenarios:
         return []
-    from dromx.agents.utils.rating import (
+    from dromx.core.rating import (
         scenarios_expected_value,
         scenarios_skew_label,
     )
