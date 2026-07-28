@@ -31,6 +31,7 @@ from fastapi.responses import Response
 from sse_starlette.sse import EventSourceResponse
 
 from webapp.backend import auth, backtest, factor, hedge, jobs, monitor, notify, performance, report, runner, scheduler, sizing, store, strategy
+from webapp.backend import assistant as assistant_api
 from webapp.backend.schemas import (
     BacktestRequest,
     CreateRunRequest,
@@ -63,6 +64,9 @@ _ta_root.addHandler(_ta_handler)
 _ta_root.propagate = False  # don't double-emit via the root (uvicorn) handler
 
 app = FastAPI(title="DromX Web", version="0.1.0")
+
+# 投研助手 API
+app.include_router(assistant_api.router)
 
 
 @app.on_event("startup")

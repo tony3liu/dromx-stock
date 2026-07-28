@@ -86,7 +86,8 @@ def _normalize_cn(symbol: str) -> str:
             break
     if "." in s:
         base, _, suffix = s.rpartition(".")
-        if suffix in ("SH", "SZ", "BJ") and base.isdigit():
+        # Yahoo format (.SS = Shanghai) and mootdx format (.SH/.SZ/.BJ)
+        if suffix in ("SH", "SZ", "BJ", "SS") and base.isdigit():
             s = base
     if len(s) == 6 and s.isdigit():
         return s

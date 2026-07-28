@@ -1,31 +1,9 @@
-from typing import Annotated
+"""Backward compatibility: re-export from dromx.tools.data
 
-from langchain_core.tools import tool
+v0.5.0 架构升级：`agents/utils/prediction_markets_tools.py` 已迁移到 `dromx/tools/data/`。
+此文件保留作为向后兼容的 re-export。
+"""
 
-from dromx.dataflows.interface import route_to_vendor
+from dromx.tools.data import _get_prediction_markets
 
-
-@tool
-def get_prediction_markets(
-    topic: Annotated[
-        str,
-        "Event topic/keyword, e.g. 'Fed rate cut', 'recession 2026', "
-        "'US election', or a sector/company event.",
-    ],
-    limit: Annotated[int | None, "Max markets to return; omit for a default of 6"] = None,
-) -> str:
-    """
-    Retrieve live, market-implied probabilities for forward-looking events from
-    prediction markets (Polymarket): Fed decisions, recession, elections,
-    geopolitics, crypto. Returns the most-traded open markets matching the
-    topic, each with its implied probability, traded volume, resolution date,
-    and recent move. Uses the configured prediction_markets vendor.
-
-    Args:
-        topic (str): Event keyword(s) to search
-        limit (int): Max markets to return; omit for a default of 6
-
-    Returns:
-        str: A formatted markdown report of matching prediction markets
-    """
-    return route_to_vendor("get_prediction_markets", topic, limit)
+__all__ = ["_get_prediction_markets"]

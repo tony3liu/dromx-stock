@@ -80,6 +80,11 @@ export const api = {
       `/api/price/intraday/${encodeURIComponent(ticker)}?interval=${interval}`,
     ),
 
+  assistantClear: (sessionId: string) =>
+    jsonFetch<{ ok: boolean }>(`/api/assistant/clear?session_id=${encodeURIComponent(sessionId)}`, {
+      method: "POST",
+    }),
+
   ask: (id: string, question: string, history: [string, string][]) =>
     jsonFetch<{ answer: string }>(`/api/runs/${id}/qa`, {
       method: "POST",

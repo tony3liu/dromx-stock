@@ -20,6 +20,7 @@ from __future__ import annotations
 from dromx.browser._cli import find_agent_browser, run_browser_command
 from dromx.browser._session import get_or_create_session
 from dromx.browser._snapshot import truncate_snapshot
+from dromx.browser.tools import web_read, web_search
 
 __all__ = [
     "navigate",
@@ -28,6 +29,8 @@ __all__ = [
     "screenshot",
     "read_article",
     "browser_available",
+    "web_read",
+    "web_search",
 ]
 
 _SNAPSHOT_MAX = 8000

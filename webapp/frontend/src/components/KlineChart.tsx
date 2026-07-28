@@ -15,6 +15,8 @@ const UP_COLOR = "#10b981";
 const DOWN_COLOR = "#f85149";
 const MA_COLORS = ["#e3b341", "#7c6bf5", "#3dd9c5"];
 const MA_LABELS = ["MA5", "MA10", "MA20"];
+// Beijing time offset (UTC+8) in seconds — convert UTC timestamps to local time for display.
+const BEIJING_OFFSET = 8 * 3600;
 
 export type KlineMode = "daily" | "intraday";
 
@@ -181,9 +183,11 @@ export function KlineChart({
           chartRef.current?.timeScale().fitContent();
         } else if (mode === "intraday" && intradayPoints?.length) {
           const data = withMAs(intradayPoints).sort((a, b) => a.time - b.time);
+          // Convert UTC timestamps to Beijing time (UTC+8) for display
+          const localTime = (t: number) => (t + BEIJING_OFFSET) as unknown as Parameters<ISeriesApi<"Candlestick">["setData"]>[0][number]["time"];
           candleRef.current.setData(
             data.map((d) => ({
-              time: d.time as unknown as Parameters<ISeriesApi<"Candlestick">["setData"]>[0][number]["time"],
+              time: localTime(d.time),
               open: d.open ?? d.close,
               high: d.high ?? d.close,
               low: d.low ?? d.close,
@@ -194,7 +198,7 @@ export function KlineChart({
             maRefs.current[i]?.setData(
               data
                 .map((d) => ({
-                  time: d.time as unknown as Parameters<ISeriesApi<"Line">["setData"]>[0][number]["time"],
+                  time: localTime(d.time),
                   value: period === 5 ? d.ma5 : period === 10 ? d.ma10 : d.ma20,
                 }))
                 .filter((d) => d.value != null),

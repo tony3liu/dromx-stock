@@ -1,34 +1,9 @@
-"""Skill injector — format selected skills into a system-prompt block.
+"""Backward compatibility: re-export from dromx.skills.injector
 
-The block goes AFTER the core instructions + pre-fetched data and BEFORE the
-tool list, so the model sees ground-truth data first, then the skill playbooks,
-then the tools it can call to execute the playbooks (PRD §10.5).
-
-The block is a no-op (returns "") when no skills are selected, so the v0.3
-analyst prompt is byte-identical when skills are disabled.
+v0.5.0 架构升级：`agents/utils/skills/injector.py` 已迁移到 `dromx/skills/injector.py`。
+此文件保留作为向后兼容的 re-export。
 """
 
-from __future__ import annotations
+from dromx.skills.injector import SkillInjector
 
-from .loader import Skill
-
-
-class SkillInjector:
-    """Format a list of skills into the ``[SKILL: ...]`` prompt block."""
-
-    @staticmethod
-    def format_skills_block(skills: list[Skill]) -> str:
-        if not skills:
-            return ""
-        parts = [
-            "",
-            "## Applicable skills (methodology playbooks — apply the relevant ones)",
-            "",
-        ]
-        for s in skills:
-            parts.append(f"[SKILL: {s.name}]")
-            if s.description:
-                parts.append(f"{s.description}")
-            parts.append(s.body.rstrip())
-            parts.append("")
-        return "\n".join(parts)
+__all__ = ["SkillInjector"]

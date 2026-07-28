@@ -1,4 +1,4 @@
-import { Plus, History as HistoryIcon, GitCompareArrows, PanelLeftClose, PanelLeftOpen, Trash2, Check, X, TrendingUp, Shield, FlaskConical, Search, Bell, Settings as SettingsIcon } from "lucide-react";
+import { Plus, History as HistoryIcon, GitCompareArrows, PanelLeftClose, PanelLeftOpen, Trash2, Check, X, TrendingUp, Shield, FlaskConical, Search, Bell, Settings as SettingsIcon, Bot } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { RunSummary } from "../api/types";
@@ -25,6 +25,7 @@ export function Sidebar({
   onScreener,
   onMonitor,
   onMarket,
+  onAssistant,
   onSettings,
   onHome,
   onDeleted,
@@ -35,6 +36,7 @@ export function Sidebar({
   screenerActive,
   monitorActive,
   marketActive,
+  assistantActive,
   settingsActive,
   refreshKey,
   collapsed,
@@ -50,6 +52,7 @@ export function Sidebar({
   onScreener: () => void;
   onMonitor: () => void;
   onMarket: () => void;
+  onAssistant: () => void;
   onSettings: () => void;
   onHome: () => void;
   onDeleted: (id: string) => void;
@@ -60,6 +63,7 @@ export function Sidebar({
   screenerActive: boolean;
   monitorActive: boolean;
   marketActive: boolean;
+  assistantActive: boolean;
   settingsActive: boolean;
   refreshKey: number;
   collapsed: boolean;
@@ -103,6 +107,7 @@ export function Sidebar({
   // collapsed icon rail. `locked` keeps an entry visible but disabled (with a
   // hint) instead of hiding it, so features are discoverable before unlock.
   const NAV: NavEntry[] = [
+    { key: "assistant", icon: <Bot size={16} />, label: "投研助手", active: assistantActive, onClick: onAssistant, group: "工作区" },
     { key: "screener", icon: <Search size={16} />, label: "选股", active: screenerActive, onClick: onScreener, group: "工作区" },
     { key: "monitor", icon: <Bell size={16} />, label: "监控中心", active: monitorActive, onClick: onMonitor, group: "工作区" },
     { key: "market", icon: <TrendingUp size={16} />, label: "大盘", active: marketActive, onClick: onMarket, group: "工作区" },
