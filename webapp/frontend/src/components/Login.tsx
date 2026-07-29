@@ -62,7 +62,7 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
           aria-label="访问口令"
           className="text-sm"
         />
-        {error && <p className="mt-2 text-sm text-[var(--color-bear)]">{error}</p>}
+        {error && <p className="mt-2 text-sm text-[var(--color-danger)]">{error}</p>}
 
         <button
           onClick={submit}

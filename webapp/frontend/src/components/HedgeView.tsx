@@ -9,8 +9,8 @@ import { Card } from "./ui/Card";
 // Colour a correlation cell: red = concentrated (high +), green = hedge (neg), grey = ~0.
 function corrStyle(c: number | null): { bg: string; text: string } {
   if (c == null) return { bg: "transparent", text: "var(--color-ink-faint)" };
-  if (c >= 0.7) return { bg: "color-mix(in srgb, var(--color-bear) 22%, transparent)", text: "var(--color-bear)" };
-  if (c >= 0.4) return { bg: "color-mix(in srgb, var(--color-bear) 10%, transparent)", text: "var(--color-ink)" };
+  if (c >= 0.7) return { bg: "color-mix(in srgb, var(--color-danger) 22%, transparent)", text: "var(--color-danger)" };
+  if (c >= 0.4) return { bg: "color-mix(in srgb, var(--color-danger) 10%, transparent)", text: "var(--color-ink)" };
   if (c <= -0.4) return { bg: "rgba(6,193,103,0.18)", text: "var(--color-brand-dark)" };
   return { bg: "var(--color-surface-2)", text: "var(--color-ink-soft)" };
 }
@@ -45,7 +45,7 @@ export function HedgeView() {
         </div>
       )}
       {err && !loading && (
-        <div className="rounded-[var(--radius-card)] bg-[var(--color-bear-tint)] p-4 text-sm text-[var(--color-bear)]">{err}</div>
+        <div className="rounded-[var(--radius-card)] bg-[var(--color-danger-tint)] p-4 text-sm text-[var(--color-danger)]">{err}</div>
       )}
 
       {report && !loading && report.names.length < 2 && (
@@ -109,7 +109,7 @@ export function HedgeView() {
               </tbody>
             </table>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-[var(--color-ink-faint)]">
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded" style={{ background: "color-mix(in srgb, var(--color-bear) 22%, transparent)" }} /> ≥0.7 同一押注</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded" style={{ background: "color-mix(in srgb, var(--color-danger) 22%, transparent)" }} /> ≥0.7 同一押注</span>
               <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded" style={{ background: "rgba(6,193,103,0.18)" }} /> ≤-0.4 对冲</span>
               {report.skipped.length > 0 && <span>· 跳过（数据不足）：{report.skipped.join(", ")}</span>}
             </div>

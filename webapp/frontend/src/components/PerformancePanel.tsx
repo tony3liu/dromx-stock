@@ -75,7 +75,7 @@ export function PerformancePanel() {
         </div>
       )}
       {err && !loading && (
-        <div className="rounded-[var(--radius-card)] bg-[var(--color-bear-tint)] p-4 text-sm text-[var(--color-bear)]">{err}</div>
+        <div className="rounded-[var(--radius-card)] bg-[var(--color-danger-tint)] p-4 text-sm text-[var(--color-danger)]">{err}</div>
       )}
 
       {m && !loading && (
@@ -147,7 +147,7 @@ export function PerformancePanel() {
                       ) : o.correct ? (
                         <span className="text-xs font-medium text-[var(--color-bull)]">✓ 命中</span>
                       ) : (
-                        <span className="text-xs font-medium text-[var(--color-bear)]">✗ 未中</span>
+                        <span className="text-xs font-medium text-[var(--color-danger)]">✗ 未中</span>
                       )}
                     </td>
                   </tr>

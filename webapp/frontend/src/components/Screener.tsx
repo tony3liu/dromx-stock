@@ -16,7 +16,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 function pctCell(v: number | null | undefined) {
   if (v == null) return <span className="text-[var(--color-ink-faint)]">—</span>;
   const pct = v * 100;
-  const cls = pct > 0 ? "text-[var(--color-bull)]" : pct < 0 ? "text-[var(--color-bear)]" : "text-[var(--color-ink-soft)]";
+  const cls = pct > 0 ? "text-[var(--color-bull)]" : pct < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-ink-soft)]";
   return <span className={cn("tnum font-semibold", cls)}>{pct > 0 ? "+" : ""}{pct.toFixed(2)}%</span>;
 }
 
@@ -165,7 +165,7 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
       {/* body */}
       <div className="mx-auto max-w-[1180px] px-8 py-6">
         {err && (
-          <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] px-4 py-3 text-sm text-[var(--color-bear)]">{err}</div>
+          <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] px-4 py-3 text-sm text-[var(--color-danger)]">{err}</div>
         )}
 
         {running && (

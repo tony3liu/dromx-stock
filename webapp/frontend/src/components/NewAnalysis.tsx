@@ -241,7 +241,7 @@ export function NewAnalysis({ onStarted }: { onStarted: (id: string) => void }) 
       </div>
 
       {err && (
-        <div className="mt-4 rounded-[var(--radius-control)] border border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] px-3.5 py-2.5 text-sm text-[var(--color-bear)]">
+        <div className="mt-4 rounded-[var(--radius-control)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] px-3.5 py-2.5 text-sm text-[var(--color-danger)]">
           {err}
         </div>
       )}

@@ -135,7 +135,7 @@ export function BacktestView() {
 
         {estimate && (
           <div className={cn("mt-3 flex items-start gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-xs",
-            estimate.capped ? "border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] text-[var(--color-bear)]" : "border-[var(--color-warn-border)] bg-[var(--color-warn-tint)] text-[var(--color-warn)]")}>
+            estimate.capped ? "border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] text-[var(--color-danger)]" : "border-[var(--color-warn-border)] bg-[var(--color-warn-tint)] text-[var(--color-warn)]")}>
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             <span>
               预计 <strong>{estimate.days}</strong> 个交易日 → <strong>{estimate.days}</strong> 次全流程 LLM 调用（耗时+花费随之增加）。
@@ -144,7 +144,7 @@ export function BacktestView() {
             </span>
           </div>
         )}
-        {err && <div className="mt-3 rounded-[var(--radius-control)] border border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] px-3 py-2 text-sm text-[var(--color-bear)]">{err}</div>}
+        {err && <div className="mt-3 rounded-[var(--radius-control)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] px-3 py-2 text-sm text-[var(--color-danger)]">{err}</div>}
 
         <div className="mt-4 flex gap-2">
           <button onClick={launch} disabled={!!active && active.status === "running"}
@@ -152,7 +152,7 @@ export function BacktestView() {
             <Play size={15} /> 开始回测
           </button>
           {active?.status === "running" && (
-            <button onClick={stop} className="flex items-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-border)] px-4 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-bear)] hover:text-[var(--color-bear)]">
+            <button onClick={stop} className="flex items-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-border)] px-4 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]">
               <Square size={14} /> 停止
             </button>
           )}
@@ -169,7 +169,7 @@ export function BacktestView() {
             <span className="tnum">· 进度 {active.days_done}/{active.days_total}</span>
             <span className={cn("rounded-[5px] px-1.5 py-0.5 text-xs font-medium",
               active.status === "done" ? "bg-[var(--color-brand-tint)] text-[var(--color-brand-dark)]"
-              : active.status === "error" ? "bg-[var(--color-bear-tint)] text-[var(--color-bear)]"
+              : active.status === "error" ? "bg-[var(--color-danger-tint)] text-[var(--color-danger)]"
               : "bg-[var(--color-warn-tint)] text-[var(--color-warn)]")}>
               {active.status === "done" ? "完成" : active.status === "error" ? "失败" : "运行中"}
             </span>
@@ -235,7 +235,7 @@ export function BacktestView() {
                     <td className="px-4 py-2 text-center text-xs">
                       {d.correct == null ? <span className="text-[var(--color-ink-faint)]">—</span>
                         : d.correct ? <span className="font-medium text-[var(--color-bull)]">✓</span>
-                        : <span className="font-medium text-[var(--color-bear)]">✗</span>}
+                        : <span className="font-medium text-[var(--color-danger)]">✗</span>}
                     </td>
                   </tr>
                 ))}

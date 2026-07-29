@@ -23,9 +23,11 @@
   --color-brand-tint: rgba(16, 185, 129, 0.12);
 
   --color-bull: #10b981;             /* up / buy */
-  --color-bear: #f85149;             /* down / sell — Danger */
+  --color-bear: #f85149;             /* down / sell */
   --color-bull-tint: rgba(16, 185, 129, 0.12);
   --color-bear-tint: rgba(248, 81, 73, 0.12);
+  --color-danger: #f85149;           /* error / destructive — 不随涨跌配色翻转 */
+  --color-danger-tint: rgba(248, 81, 73, 0.12);
   --color-neutral: #e3b341;          /* hold, amber */
   --color-warn: #e3b341;
   --color-warn-tint: rgba(227, 179, 65, 0.12);
@@ -35,12 +37,18 @@
 }
 
 /* 涨跌配色：红涨绿跌（A 股习惯）。<html data-quote-color="cn"> 时切换，
-   默认（intl）为上方 :root 的绿涨红跌。见 src/lib/quoteColor.ts。 */
+   默认（intl）为上方 :root 的绿涨红跌。见 src/lib/quoteColor.ts。
+   翻转 bull/bear（涨跌语义）+ brand（按钮/选中/hover 等主交互色）；
+   danger（错误/删除）保持红色不变。 */
 :root[data-quote-color="cn"] {
   --color-bull: #f85149;             /* up / buy — 红涨 */
   --color-bear: #10b981;             /* down / sell — 绿跌 */
   --color-bull-tint: rgba(248, 81, 73, 0.12);
   --color-bear-tint: rgba(16, 185, 129, 0.12);
+  --color-brand: #f85149;
+  --color-brand-dark: #ff7b72;
+  --color-brand-deep: #da3633;
+  --color-brand-tint: rgba(248, 81, 73, 0.12);
 }
 
 :root {

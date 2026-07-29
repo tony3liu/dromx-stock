@@ -153,7 +153,7 @@ export function Settings() {
               {testing ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} 发送测试通知
             </button>
             {msg && (
-              <span className={cn("flex items-center gap-1.5 text-sm", msg.ok ? "text-[var(--color-brand-dark)]" : "text-[var(--color-bear)]")}>
+              <span className={cn("flex items-center gap-1.5 text-sm", msg.ok ? "text-[var(--color-brand-dark)]" : "text-[var(--color-danger)]")}>
                 {msg.ok ? <CheckCircle2 size={15} /> : <XCircle size={15} />} {msg.text}
               </span>
             )}

@@ -327,8 +327,8 @@ export function RunWorkbench({ runId, ticker, onOpenRun, onStatusSettled }: { ru
       <div className="mx-auto max-w-[1760px] px-6 py-6">
         {s.error && (
           <div className="mx-auto flex max-w-lg flex-col items-center gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--color-bear-tint)]">
-              <AlertTriangle size={22} className="text-[var(--color-bear)]" />
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--color-danger-tint)]">
+              <AlertTriangle size={22} className="text-[var(--color-danger)]" />
             </div>
             <div className="font-semibold text-[var(--color-ink)]">分析未完成</div>
             <p className="text-sm text-[var(--color-ink-soft)]">{s.error}</p>

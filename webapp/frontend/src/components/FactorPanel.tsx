@@ -16,7 +16,7 @@ function Metric({ label, value, hint, tone }: {
     <div className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2">
       <div className="text-[11px] text-[var(--color-ink-faint)]">{label}</div>
       <div className={cn("mt-0.5 text-base font-bold tnum",
-        tone === "hot" ? "text-[var(--color-bear)]" : "text-[var(--color-ink)]")}>{value}</div>
+        tone === "hot" ? "text-[var(--color-danger)]" : "text-[var(--color-ink)]")}>{value}</div>
       {hint && <div className="text-[10px] text-[var(--color-ink-faint)]">{hint}</div>}
     </div>
   );

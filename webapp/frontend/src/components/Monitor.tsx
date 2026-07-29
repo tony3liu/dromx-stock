@@ -9,7 +9,7 @@ import { cn } from "../lib/format";
 const TYPE_CN: Record<string, string> = { price: "价格阈值", signal: "技术信号", strategy: "策略池" };
 
 function sevColor(s: RuleSeverity): string {
-  if (s === "critical") return "var(--color-bear)";
+  if (s === "critical") return "var(--color-danger)";
   if (s === "warn") return "var(--color-warn)";
   return "var(--color-brand-dark)";
 }
@@ -88,7 +88,7 @@ export function Monitor() {
           <span>监控由后端定时轮询驱动，需以 <code className="rounded bg-[var(--color-warn-border)] px-1 font-mono text-[12px]">DROMX_MONITOR_ENABLED=true</code> 启动服务后才会自动评估规则。规则在此随时增改，下一轮轮询即生效。</span>
         </div>
 
-        {err && <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] px-4 py-3 text-sm text-[var(--color-bear)]">{err}</div>}
+        {err && <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] px-4 py-3 text-sm text-[var(--color-danger)]">{err}</div>}
 
         {loading ? (
           <div className="flex items-center gap-2 py-16 text-sm text-[var(--color-ink-faint)]"><Loader2 size={16} className="animate-spin" /> 加载中…</div>
@@ -135,7 +135,7 @@ export function Monitor() {
                         <>
                           <span className="text-xs text-[var(--color-ink-faint)]">确认删除？</span>
                           <button onClick={() => del(rule.id)}
-                            className="rounded-[5px] bg-[var(--color-bear)] px-2 py-0.5 text-[11px] font-medium text-white transition hover:brightness-110">
+                            className="rounded-[5px] bg-[var(--color-danger)] px-2 py-0.5 text-[11px] font-medium text-white transition hover:brightness-110">
                             是
                           </button>
                           <button onClick={() => setConfirmId(null)}
@@ -152,7 +152,7 @@ export function Monitor() {
                             {rule.enabled ? "启用中" : "已停用"}
                           </button>
                           <button onClick={() => { setEditing(rule); setShowEditor(true); }} title="编辑规则" aria-label="编辑规则" className="grid h-7 w-7 place-items-center rounded-[6px] text-[var(--color-ink-faint)] opacity-0 transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-brand-dark)] group-hover:opacity-100"><Pencil size={14} /></button>
-                          <button onClick={() => setConfirmId(rule.id)} title="删除规则" aria-label="删除规则" className="grid h-7 w-7 place-items-center rounded-[6px] text-[var(--color-ink-faint)] opacity-0 transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-bear)] group-hover:opacity-100"><Trash2 size={14} /></button>
+                          <button onClick={() => setConfirmId(rule.id)} title="删除规则" aria-label="删除规则" className="grid h-7 w-7 place-items-center rounded-[6px] text-[var(--color-ink-faint)] opacity-0 transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-danger)] group-hover:opacity-100"><Trash2 size={14} /></button>
                         </>
                       )}
                     </div>

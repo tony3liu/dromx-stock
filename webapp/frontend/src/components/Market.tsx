@@ -169,7 +169,7 @@ export function Market() {
               {adding ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Plus size={16} />}
             </button>
           </form>
-          {addError && <p className="text-xs text-[var(--color-bear)]">{addError}</p>}
+          {addError && <p className="text-xs text-[var(--color-danger)]">{addError}</p>}
 
           {/* mode toggle + refresh controls */}
           <div className="ml-auto flex items-center gap-2">
@@ -265,7 +265,7 @@ export function Market() {
                 </button>
                 <button
                   onClick={() => removeFromWatchlist(item.ticker)}
-                  className="grid h-6 w-6 place-items-center rounded-full text-[var(--color-ink-faint)] opacity-0 transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-bear)] group-hover:opacity-100"
+                  className="grid h-6 w-6 place-items-center rounded-full text-[var(--color-ink-faint)] opacity-0 transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-danger)] group-hover:opacity-100"
                   aria-label={`移除 ${item.ticker}`}
                 >
                   <X size={12} />

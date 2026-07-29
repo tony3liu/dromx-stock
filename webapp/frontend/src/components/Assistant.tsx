@@ -255,7 +255,7 @@ export function Assistant() {
             </div>
           )}
           {error && (
-            <div className="flex items-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-bear)]/30 bg-[var(--color-bear-tint)] px-3 py-2 text-sm text-[var(--color-bear)]">
+            <div className="flex items-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] px-3 py-2 text-sm text-[var(--color-danger)]">
               <AlertCircle size={16} />
               {error}
             </div>

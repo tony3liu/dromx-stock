@@ -190,7 +190,7 @@ export function RuleEditor({ initial, strategies, onSaved, onCancel }: {
                         </>
                       )}
                       {r.conditions.length > 1 && (
-                        <button onClick={() => rmCond(i)} aria-label="删除条件" className="text-[var(--color-ink-faint)] hover:text-[var(--color-bear)]"><X size={16} /></button>
+                        <button onClick={() => rmCond(i)} aria-label="删除条件" className="text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"><X size={16} /></button>
                       )}
                     </div>
                   );
@@ -226,7 +226,7 @@ export function RuleEditor({ initial, strategies, onSaved, onCancel }: {
           </div>
         </div>
 
-        {err && <div className="mt-3 rounded-lg bg-[var(--color-bear-tint)] p-2.5 text-sm text-[var(--color-bear)]">{err}</div>}
+        {err && <div className="mt-3 rounded-lg bg-[var(--color-danger-tint)] p-2.5 text-sm text-[var(--color-danger)]">{err}</div>}
 
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} className="rounded-[var(--radius-control)] border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-2)]">取消</button>

@@ -252,7 +252,7 @@ export function Sidebar({
                   {r.status === "running" ? (
                     <span className="text-[11px] text-[var(--color-shell-active-text)]">运行中…</span>
                   ) : r.status === "error" ? (
-                    <span className="text-[11px] text-[var(--color-bear)]">失败</span>
+                    <span className="text-[11px] text-[var(--color-danger)]">失败</span>
                   ) : (
                     <span className={cn("inline-flex items-center gap-1 text-[11px] font-medium", shellRatingText[ratingDir(r.rating)])}>
                       <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -276,7 +276,7 @@ export function Sidebar({
                     disabled={busy}
                     title="确认删除"
                     aria-label="确认删除"
-                    className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--color-bear)] text-white transition hover:brightness-110 disabled:opacity-50"
+                    className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--color-danger)] text-white transition hover:brightness-110 disabled:opacity-50"
                   >
                     <Check size={15} />
                   </button>
@@ -295,7 +295,7 @@ export function Sidebar({
                   onClick={() => setConfirmId(r.id!)}
                   title="删除此记录"
                   aria-label="删除此记录"
-                  className="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-[var(--color-shell-text-soft)] opacity-0 transition hover:bg-[var(--color-shell-hover)] hover:text-[var(--color-bear)] focus:opacity-100 group-hover:opacity-100"
+                  className="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-[var(--color-shell-text-soft)] opacity-0 transition hover:bg-[var(--color-shell-hover)] hover:text-[var(--color-danger)] focus:opacity-100 group-hover:opacity-100"
                 >
                   <Trash2 size={15} />
                 </button>
