@@ -10,9 +10,8 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { api } from "../api/client";
 import type { PricePoint, IntradayPoint } from "../api/types";
 import { cn } from "../lib/format";
+import { quoteColors, QUOTE_COLOR_CHANGE_EVENT, type QuoteColorMode } from "../lib/quoteColor";
 
-const UP_COLOR = "#10b981";
-const DOWN_COLOR = "#f85149";
 const MA_COLORS = ["#e3b341", "#7c6bf5", "#3dd9c5"];
 const MA_LABELS = ["MA5", "MA10", "MA20"];
 // Beijing time offset (UTC+8) in seconds — convert UTC timestamps to local time for display.
@@ -50,7 +49,26 @@ export function KlineChart({
   const [dailyPoints, setDailyPoints] = useState<PricePoint[] | null>(null);
   const [intradayPoints, setIntradayPoints] = useState<IntradayPoint[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [colors, setColors] = useState(quoteColors);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 涨跌配色切换（绿涨红跌 / 红涨绿跌）：重取色并即时应用到 K 线系列
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      setColors(quoteColors((e as CustomEvent<QuoteColorMode>).detail));
+    };
+    window.addEventListener(QUOTE_COLOR_CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(QUOTE_COLOR_CHANGE_EVENT, onChange);
+  }, []);
+
+  useEffect(() => {
+    candleRef.current?.applyOptions({
+      upColor: colors.up,
+      downColor: colors.down,
+      wickUpColor: colors.up,
+      wickDownColor: colors.down,
+    });
+  }, [colors]);
   const chartRef = useRef<IChartApi | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -135,11 +153,11 @@ export function KlineChart({
         chartRef.current = chart;
 
         candleRef.current = chart.addSeries(CandlestickSeries, {
-          upColor: UP_COLOR,
-          downColor: DOWN_COLOR,
+          upColor: quoteColors().up,
+          downColor: quoteColors().down,
           borderVisible: false,
-          wickUpColor: UP_COLOR,
-          wickDownColor: DOWN_COLOR,
+          wickUpColor: quoteColors().up,
+          wickDownColor: quoteColors().down,
         });
 
         maRefs.current = [5, 10, 20].map((_period, i) =>
@@ -261,10 +279,10 @@ export function KlineChart({
       <div ref={containerRef} className={cn("w-full", chartClassName)} />
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--color-ink-soft)]">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-3 rounded-full bg-[#10b981]" /> 上涨
+          <span className="inline-block h-2 w-3 rounded-full" style={{ background: colors.up }} /> 上涨
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-3 rounded-full bg-[#f85149]" /> 下跌
+          <span className="inline-block h-2 w-3 rounded-full" style={{ background: colors.down }} /> 下跌
         </span>
         {MA_LABELS.map((m, i) => (
           <span key={m} className="flex items-center gap-1.5">

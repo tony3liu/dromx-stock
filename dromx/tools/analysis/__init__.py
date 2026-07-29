@@ -16,7 +16,7 @@ from dromx.tools.registry import registry, tool_error, tool_result
 logger = logging.getLogger(__name__)
 
 
-def _run_deep_analysis(args: dict, llm=None, config=None) -> str:
+def _run_deep_analysis(args: dict, llm=None, config=None, cancel_event=None) -> str:
     """运行深度分析流水线"""
     ticker = args.get("ticker", "")
     date = args.get("date") or datetime.now().strftime("%Y-%m-%d")
@@ -27,9 +27,11 @@ def _run_deep_analysis(args: dict, llm=None, config=None) -> str:
         return tool_error("Missing required param: ticker")
 
     try:
+        from dromx.assistant.cancel import CancelledError
         from webapp.backend.runner import run_analysis_once
 
-        result, rating = run_analysis_once(ticker, date, analysts, depth)
+        should_stop = cancel_event.is_set if cancel_event is not None else None
+        result, rating = run_analysis_once(ticker, date, analysts, depth, should_stop=should_stop)
         decision = result.get("final_trade_decision", "")
         return tool_result({
             "ticker": ticker,
@@ -38,6 +40,8 @@ def _run_deep_analysis(args: dict, llm=None, config=None) -> str:
             "decision": decision,
             "sections": {k: v for k, v in result.items() if isinstance(v, str)},
         })
+    except CancelledError:
+        return tool_error("深度分析已被用户停止（部分中间结果已丢弃）", cancelled=True)
     except Exception as e:
         return tool_error(f"Deep analysis failed: {e}")
 

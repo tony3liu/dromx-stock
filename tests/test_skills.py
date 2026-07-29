@@ -8,7 +8,7 @@ and the instrument/regime/market filter axes are the core behaviours.
 
 from __future__ import annotations
 
-from dromx.agents.utils.skills import (
+from dromx.skills import (
     SkillInjector,
     SkillLoader,
     SkillSelector,

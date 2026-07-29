@@ -372,3 +372,44 @@ registry.register(
     handler=_get_verified_market_snapshot,
     description="获取验证过的市场快照",
 )
+
+
+# ---------------------------------------------------------------------------
+# LangChain @tool 层（供 dromx/agents 分析图 bind_tools / .func 使用）
+# 重构时这层一度丢失，导致 core/agent_utils 导入断裂 —— 勿再删除。
+# ---------------------------------------------------------------------------
+from .lc_tools import (  # noqa: E402
+    fetch_reddit_tool,
+    fetch_stocktwits_tool,
+    fetch_x_posts_tool,
+    get_balance_sheet,
+    get_cashflow,
+    get_fundamentals,
+    get_global_news,
+    get_income_statement,
+    get_indicators,
+    get_insider_transactions,
+    get_macro_indicators,
+    get_news,
+    get_prediction_markets,
+    get_stock_data,
+    get_verified_market_snapshot,
+)
+
+__all__ = [
+    "fetch_reddit_tool",
+    "fetch_stocktwits_tool",
+    "fetch_x_posts_tool",
+    "get_balance_sheet",
+    "get_cashflow",
+    "get_fundamentals",
+    "get_global_news",
+    "get_income_statement",
+    "get_indicators",
+    "get_insider_transactions",
+    "get_macro_indicators",
+    "get_news",
+    "get_prediction_markets",
+    "get_stock_data",
+    "get_verified_market_snapshot",
+]

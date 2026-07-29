@@ -73,13 +73,25 @@ def create_sentiment_analyst(llm):
         instrument_context = get_instrument_context_from_state(state)
         regime_context = get_regime_context_from_state(state)
 
-        # Pre-fetch all three sources. Each fetcher degrades gracefully and
+        # Pre-fetch all four sources. Each fetcher degrades gracefully and
         # returns a string (no exceptions surface from here), so the LLM
         # always sees something — either real data or a clear placeholder.
-        news_block = get_news.func(ticker, start_date, end_date)
-        stocktwits_block = fetch_stocktwits_messages(ticker, limit=30)
-        reddit_block = fetch_reddit_posts(ticker)
-        x_block = fetch_x_posts(ticker, limit=30)
+        # The fetches are independent network calls, so run them in parallel.
+        from dromx.graph.prefetch import parallel_prefetch
+        blocks = parallel_prefetch(
+            {
+                "news": lambda: get_news.func(ticker, start_date, end_date),
+                "stocktwits": lambda: fetch_stocktwits_messages(ticker, limit=30),
+                "reddit": lambda: fetch_reddit_posts(ticker),
+                "x": lambda: fetch_x_posts(ticker, limit=30),
+            },
+            max_workers=4,
+            label="sentiment prefetch",
+        )
+        news_block = blocks["news"]
+        stocktwits_block = blocks["stocktwits"]
+        reddit_block = blocks["reddit"]
+        x_block = blocks["x"]
 
         system_message = _build_system_message(
             ticker=ticker,

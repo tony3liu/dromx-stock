@@ -3,12 +3,14 @@ import { Settings as SettingsIcon, Loader2, Send, CheckCircle2, XCircle } from "
 import { api } from "../api/client";
 import type { NotifyChannels } from "../api/types";
 import { cn } from "../lib/format";
+import { getQuoteColorMode, setQuoteColorMode, type QuoteColorMode } from "../lib/quoteColor";
 import { PageHeader } from "./PageHeader";
 import { Input } from "./ui/Input";
 
 export function Settings() {
   const [channels, setChannels] = useState<NotifyChannels | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quoteMode, setQuoteMode] = useState<QuoteColorMode>(getQuoteColorMode);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [secret, setSecret] = useState("");
   const [systemEnabled, setSystemEnabled] = useState(true);
@@ -67,6 +69,31 @@ export function Settings() {
       />
 
       <div className="mx-auto max-w-[760px] px-8 py-6">
+      {/* 涨跌配色：全局立即生效，无需保存 */}
+      <div className="mb-4 flex items-center justify-between rounded-[var(--radius-panel)] border border-[var(--color-border)] px-4 py-4">
+        <div>
+          <div className="text-sm font-semibold text-[var(--color-ink)]">涨跌配色</div>
+          <div className="mt-0.5 text-xs text-[var(--color-ink-faint)]">
+            海外习惯绿涨红跌，A 股习惯红涨绿跌
+          </div>
+        </div>
+        <div className="flex overflow-hidden rounded-[var(--radius-control)] border border-[var(--color-border)]">
+          {(["intl", "cn"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => { setQuoteColorMode(m); setQuoteMode(m); }}
+              className={cn(
+                "px-3 py-1.5 text-xs transition",
+                quoteMode === m
+                  ? "bg-[var(--color-brand)] text-white"
+                  : "bg-[var(--color-surface)] text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-2)]",
+              )}
+            >
+              {m === "intl" ? "绿涨红跌" : "红涨绿跌"}
+            </button>
+          ))}
+        </div>
+      </div>
       {loading ? (
         <div className="flex items-center gap-2 py-16 text-sm text-[var(--color-ink-faint)]"><Loader2 size={16} className="animate-spin" /> 加载中…</div>
       ) : (

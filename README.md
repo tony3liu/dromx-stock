@@ -19,7 +19,7 @@
 
 ```bash
 conda activate dromx
-conda run -n dromx --no-capture-output uvicorn webapp.backend.main:app --port 8077 --log-level info
+conda run --no-capture-output -n tradingagents uvicorn webapp.backend.main:app --port 8077 --log-level info --reload
 ```
 
 ## Config (`.env`)

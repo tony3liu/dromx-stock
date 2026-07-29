@@ -11,7 +11,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import dromx.agents.analysts.news_analyst as na
-import dromx.agents.utils.agent_loop as al
+import dromx.core.agent_loop as al
 from dromx.dataflows.config import set_config
 from dromx.default_config import DEFAULT_CONFIG
 from dromx.graph.conditional_logic import ConditionalLogic

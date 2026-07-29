@@ -453,25 +453,31 @@ class DromXGraph:
         """Execute the graph and write the resulting state to disk and memory log."""
         # Initialize state — inject memory log context for PM and the
         # deterministically resolved instrument identity for all agents.
-        past_context = self.memory_log.get_past_context(company_name)
-        instrument_context = self.resolve_instrument_context(company_name, asset_type)
-        portfolio_context = self._build_portfolio_context(company_name, trade_date)
-        market_context = self._build_market_context(company_name, trade_date)
-        overnight_context = self._build_overnight_transmission(company_name, trade_date)
-        pattern_context = self._build_pattern_discovery(company_name, trade_date)
-        foreign_flow = self._build_foreign_flow(company_name, trade_date)
-        instrument_type, framework_note = self._resolve_instrument_type(company_name, trade_date)
+        # 8 项上下文互相独立（纯查询，各自 degrade），并行预取省掉整条串行链。
+        from dromx.graph.prefetch import parallel_prefetch
+
+        ctx = parallel_prefetch({
+            "past_context": lambda: self.memory_log.get_past_context(company_name),
+            "instrument_context": lambda: self.resolve_instrument_context(company_name, asset_type),
+            "portfolio_context": lambda: self._build_portfolio_context(company_name, trade_date),
+            "market_context": lambda: self._build_market_context(company_name, trade_date),
+            "overnight_context": lambda: self._build_overnight_transmission(company_name, trade_date),
+            "pattern_context": lambda: self._build_pattern_discovery(company_name, trade_date),
+            "foreign_flow": lambda: self._build_foreign_flow(company_name, trade_date),
+            "instrument_type": lambda: self._resolve_instrument_type(company_name, trade_date),
+        }, label=f"run-start context({company_name})")
+        instrument_type, framework_note = ctx["instrument_type"]
         init_agent_state = self.propagator.create_initial_state(
             company_name,
             trade_date,
             asset_type=asset_type,
-            past_context=past_context,
-            instrument_context=instrument_context,
-            portfolio_context=portfolio_context,
-            market_context=market_context,
-            overnight_transmission=overnight_context,
-            pattern_discovery=pattern_context,
-            foreign_flow=foreign_flow,
+            past_context=ctx["past_context"],
+            instrument_context=ctx["instrument_context"],
+            portfolio_context=ctx["portfolio_context"],
+            market_context=ctx["market_context"],
+            overnight_transmission=ctx["overnight_context"],
+            pattern_discovery=ctx["pattern_context"],
+            foreign_flow=ctx["foreign_flow"],
             instrument_type=instrument_type,
             framework_note=framework_note,
         )

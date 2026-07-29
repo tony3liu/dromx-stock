@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import dromx.agents.utils.agent_loop as al
+import dromx.core.agent_loop as al
 from dromx.agents.managers.portfolio_manager import create_portfolio_manager
 from dromx.dataflows.config import set_config
 from dromx.default_config import DEFAULT_CONFIG

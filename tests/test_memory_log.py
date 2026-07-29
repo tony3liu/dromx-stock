@@ -7,7 +7,7 @@ import pytest
 
 from dromx.agents.managers.portfolio_manager import create_portfolio_manager
 from dromx.agents.schemas import PortfolioDecision, PortfolioRating
-from dromx.agents.utils.memory import TradingMemoryLog
+from dromx.core.memory import TradingMemoryLog
 from dromx.graph.propagation import Propagator
 from dromx.graph.reflection import Reflector
 from dromx.graph.trading_graph import DromXGraph
@@ -820,12 +820,12 @@ class TestLegacyRemoval:
 
     def test_financial_situation_memory_removed(self):
         """FinancialSituationMemory must not be importable from the memory module."""
-        import dromx.agents.utils.memory as m
+        import dromx.core.memory as m
         assert not hasattr(m, "FinancialSituationMemory")
 
     def test_bm25_not_imported(self):
         """rank_bm25 must not be present in the memory module namespace."""
-        import dromx.agents.utils.memory as m
+        import dromx.core.memory as m
         assert not hasattr(m, "BM25Okapi")
 
     def test_reflect_and_remember_removed(self):

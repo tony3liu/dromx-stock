@@ -13,6 +13,6 @@ v0.5.0 架构升级：统一工具注册表，替代分散的 agents/utils/*_too
 from .registry import registry, ToolRegistry, tool_error, tool_result
 
 # 导入所有 tool 模块，触发自注册
-from . import data, analysis, user, monitor
+from . import data, analysis, user, monitor, sector, web
 
-__all__ = ["registry", "ToolRegistry", "tool_error", "tool_result", "data", "analysis", "user", "monitor"]
+__all__ = ["registry", "ToolRegistry", "tool_error", "tool_result", "data", "analysis", "user", "monitor", "sector", "web"]

@@ -56,18 +56,30 @@ def create_market_analyst(llm):
         pattern_block = get_pattern_discovery_from_state(state)
         foreign_block = get_foreign_flow_from_state(state)
 
-        # Pre-fetch ground-truth data. Both fetchers degrade to a placeholder
-        # string on failure (see _safe_fetch) so the node never aborts the run.
-        snapshot = _safe_fetch(
-            lambda: get_verified_market_snapshot.func(ticker, curr_date, 30),
-            "verified snapshot",
+        # Pre-fetch ground-truth data. All four fetchers degrade to a
+        # placeholder string on failure (see _safe_fetch) so the node never
+        # aborts the run; they are independent network calls, so run in parallel.
+        from dromx.graph.prefetch import parallel_prefetch
+        blocks = parallel_prefetch(
+            {
+                "snapshot": lambda: _safe_fetch(
+                    lambda: get_verified_market_snapshot.func(ticker, curr_date, 30),
+                    "verified snapshot",
+                ),
+                "price_csv": lambda: _safe_fetch(
+                    lambda: get_stock_data.func(ticker, _seven_days_back(curr_date), curr_date),
+                    "price history",
+                ),
+                "peer_block": lambda: _build_peer_block(ticker, curr_date),
+                "etf_block": lambda: _build_etf_block(ticker, curr_date, llm=llm),
+            },
+            max_workers=4,
+            label="market prefetch",
         )
-        price_csv = _safe_fetch(
-            lambda: get_stock_data.func(ticker, _seven_days_back(curr_date), curr_date),
-            "price history",
-        )
-        peer_block = _build_peer_block(ticker, curr_date)
-        etf_block = _build_etf_block(ticker, curr_date, llm=llm)
+        snapshot = blocks["snapshot"]
+        price_csv = blocks["price_csv"]
+        peer_block = blocks["peer_block"]
+        etf_block = blocks["etf_block"]
 
         system_message = _build_system_message(
             ticker=ticker,
@@ -174,6 +186,7 @@ def _build_peer_block(ticker: str, curr_date: str) -> str:
     skipped — peer context is best-effort and must never abort the run.
     """
     from dromx.dataflows.config import get_config
+    from dromx.graph.prefetch import parallel_prefetch
 
     peers = [
         p for p in (get_config().get("peer_tickers") or [])
@@ -182,13 +195,23 @@ def _build_peer_block(ticker: str, curr_date: str) -> str:
     if not peers:
         return ""
 
-    blocks = []
-    for peer in peers:
-        snap = _safe_fetch(
-            lambda p=peer: get_verified_market_snapshot.func(p, curr_date, 30),
-            f"peer snapshot {peer}",
-        )
-        blocks.append(f"### Peer — {peer}\n<start_of_peer>\n{snap}\n<end_of_peer>")
+    # Peer snapshots are independent network calls — fetch in parallel and
+    # re-assemble in configured peer order.
+    snaps = parallel_prefetch(
+        {
+            peer: (lambda p=peer: _safe_fetch(
+                lambda: get_verified_market_snapshot.func(p, curr_date, 30),
+                f"peer snapshot {p}",
+            ))
+            for peer in peers
+        },
+        max_workers=4,
+        label="market peer snapshots",
+    )
+    blocks = [
+        f"### Peer — {peer}\n<start_of_peer>\n{snaps[peer]}\n<end_of_peer>"
+        for peer in peers
+    ]
     return (
         "\n## Peer snapshots (for RELATIVE strength — is this name leading or "
         "lagging its peers?)\n" + "\n".join(blocks) + "\n"

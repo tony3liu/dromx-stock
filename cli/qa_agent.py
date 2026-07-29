@@ -9,8 +9,8 @@ other tickers) come straight from the feature spec.
 
 from __future__ import annotations
 
-from dromx.agents.utils.agent_utils import get_language_instruction
-from dromx.agents.utils.report_summarizer import render_summary_for_prompt
+from dromx.core.agent_utils import get_language_instruction
+from dromx.core.report_summarizer import render_summary_for_prompt
 
 _RULES = """## How to answer
 1. Answer from the context above first — cite the specific number, level, or section you used.

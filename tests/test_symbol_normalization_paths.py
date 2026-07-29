@@ -7,7 +7,7 @@ hit the right instrument instead of failing/mismatching.
 """
 import pandas as pd
 
-import dromx.agents.utils.agent_utils as au
+import dromx.core.agent_utils as au
 import dromx.dataflows.yfinance_news as ynews
 import dromx.graph.trading_graph as tg
 from dromx.graph.trading_graph import DromXGraph

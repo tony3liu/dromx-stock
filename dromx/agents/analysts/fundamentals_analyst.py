@@ -82,11 +82,25 @@ def create_fundamentals_analyst(llm):
         regime_context = get_regime_context_from_state(state)
         framework_note = get_framework_note_from_state(state)
 
-        overview = _safe(lambda: get_fundamentals.func(ticker, curr_date), "fundamentals overview")
-        income = _safe(lambda: get_income_statement.func(ticker, "quarterly", curr_date), "income statement")
-        balance = _safe(lambda: get_balance_sheet.func(ticker, "quarterly", curr_date), "balance sheet")
-        cashflow = _safe(lambda: get_cashflow.func(ticker, "quarterly", curr_date), "cash flow statement")
-        peer_block = _build_peer_block(ticker, curr_date)
+        # The five pre-fetches are independent network calls (each degrades to
+        # a placeholder via _safe), so run them in parallel.
+        from dromx.graph.prefetch import parallel_prefetch
+        blocks = parallel_prefetch(
+            {
+                "overview": lambda: _safe(lambda: get_fundamentals.func(ticker, curr_date), "fundamentals overview"),
+                "income": lambda: _safe(lambda: get_income_statement.func(ticker, "quarterly", curr_date), "income statement"),
+                "balance": lambda: _safe(lambda: get_balance_sheet.func(ticker, "quarterly", curr_date), "balance sheet"),
+                "cashflow": lambda: _safe(lambda: get_cashflow.func(ticker, "quarterly", curr_date), "cash flow statement"),
+                "peer_block": lambda: _build_peer_block(ticker, curr_date),
+            },
+            max_workers=5,
+            label="fundamentals prefetch",
+        )
+        overview = blocks["overview"]
+        income = blocks["income"]
+        balance = blocks["balance"]
+        cashflow = blocks["cashflow"]
+        peer_block = blocks["peer_block"]
 
         system_message = _build_system_message(
             ticker=ticker,

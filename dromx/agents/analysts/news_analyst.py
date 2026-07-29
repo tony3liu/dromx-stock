@@ -133,14 +133,27 @@ def create_news_analyst(llm):
         overnight_transmission = get_overnight_transmission_from_state(state)
         start_date = _seven_days_back(curr_date)
 
-        news_block = _safe(lambda: get_news.func(ticker, start_date, curr_date), "ticker news")
-        news_block = _maybe_enrich_with_articles(news_block)
-        global_block = _safe(lambda: get_global_news.func(curr_date, 7, 10), "global news")
-        macro_block = _safe(lambda: _fetch_macro(curr_date), "macro indicators")
-        prediction_block = _safe(
-            lambda: get_prediction_markets.func("Fed rate cut recession 2026", 8),
-            "prediction markets",
+        # The four pre-fetches are independent network calls (each degrades to
+        # a placeholder via _safe), so run them in parallel. The article
+        # enrichment depends on the news block, so it stays sequential after.
+        from dromx.graph.prefetch import parallel_prefetch
+        blocks = parallel_prefetch(
+            {
+                "news": lambda: _safe(lambda: get_news.func(ticker, start_date, curr_date), "ticker news"),
+                "global": lambda: _safe(lambda: get_global_news.func(curr_date, 7, 10), "global news"),
+                "macro": lambda: _safe(lambda: _fetch_macro(curr_date), "macro indicators"),
+                "prediction": lambda: _safe(
+                    lambda: get_prediction_markets.func("Fed rate cut recession 2026", 8),
+                    "prediction markets",
+                ),
+            },
+            max_workers=4,
+            label="news prefetch",
         )
+        news_block = _maybe_enrich_with_articles(blocks["news"])
+        global_block = blocks["global"]
+        macro_block = blocks["macro"]
+        prediction_block = blocks["prediction"]
 
         system_message = _build_system_message(
             ticker=ticker,
@@ -266,14 +279,26 @@ def _run_news_agent_loop(*, llm, cfg, state, ticker, curr_date, system_message):
 
 
 def _fetch_macro(curr_date: str) -> str:
-    """Fetch a compact macro block from FRED across the standard series."""
-    parts = []
-    for label, key in _MACRO_INDICATORS:
+    """Fetch a compact macro block from FRED across the standard series.
+
+    The series are independent network calls, so they are fetched in parallel
+    and re-assembled in ``_MACRO_INDICATORS`` order — one failing series still
+    degrades to a placeholder without sinking the block.
+    """
+    from dromx.graph.prefetch import parallel_prefetch
+
+    def _fetch_one(label: str, key: str) -> str:
         try:
-            parts.append(f"### {label}\n{get_macro_indicators.func(key, curr_date, 90)}")
+            return f"### {label}\n{get_macro_indicators.func(key, curr_date, 90)}"
         except Exception as exc:  # noqa: BLE001 — one series shouldn't sink the block
-            parts.append(f"### {label}\n<unavailable: {type(exc).__name__}>")
-    return "\n\n".join(parts)
+            return f"### {label}\n<unavailable: {type(exc).__name__}>"
+
+    parts = parallel_prefetch(
+        {label: (lambda lbl=label, k=key: _fetch_one(lbl, k)) for label, key in _MACRO_INDICATORS},
+        max_workers=6,
+        label="macro indicators",
+    )
+    return "\n\n".join(parts[label] for label, _ in _MACRO_INDICATORS)
 
 
 def _build_system_message(

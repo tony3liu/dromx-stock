@@ -30,7 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sse_starlette.sse import EventSourceResponse
 
-from webapp.backend import auth, backtest, factor, hedge, jobs, monitor, notify, performance, report, runner, scheduler, sizing, store, strategy
+from webapp.backend import auth, backtest, factor, hedge, jobs, monitor, notify, performance, portfolio, report, runner, scheduler, sizing, store, strategy
 from webapp.backend import assistant as assistant_api
 from webapp.backend.schemas import (
     BacktestRequest,
@@ -492,6 +492,46 @@ def price_intraday(ticker: str, interval: str = "5m",
         return {"ticker": ticker, "points": []}
 
 
+@app.get("/api/portfolio")
+def get_portfolio(_: None = Depends(auth.require_auth)) -> dict:
+    """当前持仓列表（含浮盈亏，best-effort）。"""
+    return portfolio.get_user_portfolio()
+
+
+@app.get("/api/portfolio/{ticker}")
+def get_position(ticker: str, _: None = Depends(auth.require_auth)) -> dict:
+    """单只持仓详情 + 最近交易记录。"""
+    return portfolio.get_user_position(ticker)
+
+
+@app.post("/api/portfolio/trades")
+def record_trade(req: dict, _: None = Depends(auth.require_auth)) -> dict:
+    """记录一笔交易并更新持仓。
+
+    Body: {"ticker": "600519", "operation": "buy"|"sell", "price": 1680.0,
+           "date": "2026-07-28", "shares": 100}
+    """
+    try:
+        return portfolio.record_trade(
+            ticker=req.get("ticker", ""),
+            operation=req.get("operation", ""),
+            price=req.get("price"),
+            date=req.get("date", ""),
+            shares=req.get("shares"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@app.delete("/api/portfolio/{ticker}")
+def remove_position(ticker: str, _: None = Depends(auth.require_auth)) -> dict:
+    """手动移除一只持仓（保留交易记录）。"""
+    removed = portfolio.remove_holding(ticker)
+    if not removed:
+        raise HTTPException(status_code=404, detail="holding not found")
+    return {"removed": ticker}
+
+
 @app.post("/api/runs/{run_id}/qa", response_model=QAResponse)
 def qa(run_id: str, req: QARequest, _: None = Depends(auth.require_auth)) -> QAResponse:
     rec = store.load_run(run_id)
@@ -502,7 +542,7 @@ def qa(run_id: str, req: QARequest, _: None = Depends(auth.require_auth)) -> QAR
         raise HTTPException(status_code=409, detail="run has no analysis yet")
 
     from cli.qa_agent import answer_question
-    from dromx.agents.utils.report_summarizer import summarize_state
+    from dromx.core.report_summarizer import summarize_state
 
     summary = summarize_state(final_state)
     history = [(q, a) for q, a in (req.history or [])]
@@ -526,7 +566,7 @@ async def qa_stream(run_id: str, req: QARequest, _: None = Depends(auth.require_
         raise HTTPException(status_code=409, detail="run has no analysis yet")
 
     from cli.qa_agent import build_qa_prompt
-    from dromx.agents.utils.report_summarizer import summarize_state
+    from dromx.core.report_summarizer import summarize_state
 
     summary = summarize_state(final_state)
     history = [(q, a) for q, a in (req.history or [])]

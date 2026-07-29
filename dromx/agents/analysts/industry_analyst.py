@@ -94,9 +94,21 @@ def create_industry_analyst(llm):
         start_date = _seven_days_back(curr_date)
 
         identity_block = _identity_block(ticker)
-        ticker_news = _safe(lambda: get_news.func(ticker, start_date, curr_date), "ticker news")
-        global_news = _safe(lambda: get_global_news.func(curr_date, 7, 10), "global/sector news")
-        peer_block = _peer_block(ticker, curr_date)
+        # The three pre-fetches are independent network calls (each degrades
+        # to a placeholder via _safe), so run them in parallel.
+        from dromx.graph.prefetch import parallel_prefetch
+        blocks = parallel_prefetch(
+            {
+                "ticker_news": lambda: _safe(lambda: get_news.func(ticker, start_date, curr_date), "ticker news"),
+                "global_news": lambda: _safe(lambda: get_global_news.func(curr_date, 7, 10), "global/sector news"),
+                "peer_block": lambda: _peer_block(ticker, curr_date),
+            },
+            max_workers=3,
+            label="industry prefetch",
+        )
+        ticker_news = blocks["ticker_news"]
+        global_news = blocks["global_news"]
+        peer_block = blocks["peer_block"]
 
         system_message = f"""Produce an INDUSTRY & SUPPLY-CHAIN report for {ticker} as of {curr_date}. The rest of the team analyses the company; your job is the sector around it: cycle position, competitive structure, supply-chain dependencies, and disruption risk.
 {regime_context}

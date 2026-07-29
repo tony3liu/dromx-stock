@@ -66,7 +66,7 @@ class TestVerifiedSnapshot:
 @pytest.mark.unit
 class TestTool:
     def test_tool_delegates_to_builder(self, monkeypatch):
-        from dromx.agents.utils.market_data_validation_tools import (
+        from dromx.tools.data import (
             get_verified_market_snapshot,
         )
         monkeypatch.setattr(validator, "load_ohlcv", lambda s, d: _sample_ohlcv())

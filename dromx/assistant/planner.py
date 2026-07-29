@@ -14,10 +14,10 @@ import json
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 
 from dromx.tools.registry import registry
-from dromx.assistant.intents import classify_intent, get_default_tools
+from dromx.assistant.intents import classify_intent_llm, get_default_tools
 from dromx.assistant.conversation import ConversationManager
 
 logger = logging.getLogger(__name__)
@@ -52,8 +52,8 @@ class AssistantPlanner:
         Returns:
             回答文本
         """
-        # 1. 意图识别
-        intent = classify_intent(question)
+        # 1. 意图识别（LLM 分类，失败回退关键词匹配）
+        intent = classify_intent_llm(question, self.llm)
         logger.info("Assistant intent: %s for question: %s", intent, question[:100])
 
         # 2. 加载对话历史
@@ -100,6 +100,14 @@ class AssistantPlanner:
 - 如果数据不足，明确告诉用户
 - 用中文回答
 
+工具使用纪律（必须遵守）：
+- 涉及你不确定的事实——某公司在哪个市场上市、股票代码、最新事件、当前价格——
+  必须先调用 resolve_ticker 或 web_search 核实，禁止凭记忆断言。
+  你的训练知识有截止日期，新公司上市/退市/改名你都不知道。
+- 用户提到公司名而非代码时，先用 resolve_ticker 确认代码和交易所，再调数据工具。
+- 信息确实无法通过工具获取时，诚实说明，不要编造看似合理的结果。
+- 一次搜索解决一个疑问，搜索后用 web_read 读最相关的结果页面。
+
 """
         # 添加意图特定指导
         intent_guides = {
@@ -132,56 +140,169 @@ class AssistantPlanner:
         intent: str,
     ) -> str:
         """ReAct 循环：model call → tool dispatch → observe → repeat"""
+        final = ""
+        for event in self._react_loop_events(messages, tools, intent):
+            if event.get("type") == "delta":
+                final += event.get("text", "")
+            elif event.get("type") == "final":
+                final = event.get("text", final)
+        return final or "抱歉，我没有生成有效回答。"
 
-        # 绑定工具
+    def _react_loop_events(
+        self,
+        messages: List[BaseMessage],
+        tools: List[dict],
+        intent: str,
+        cancel_event=None,
+    ):
+        """ReAct 循环（生成器版）：逐步产出 delta / tool_start / final 事件
+
+        - 每轮用 ``.stream()`` 调 LLM：content 增量直接产出（真流式）
+        - 若本轮带 tool_calls：执行工具后继续循环
+        - 若 LLM 不支持 .stream：回退 .invoke，一次性产出
+        - cancel_event（threading.Event）置位时在协作点尽快中止
+        """
+
+        def _cancelled() -> bool:
+            return bool(cancel_event is not None and cancel_event.is_set())
+
         llm_with_tools = self.llm.bind_tools(tools) if hasattr(self.llm, 'bind_tools') else self.llm
+        can_stream = hasattr(llm_with_tools, "stream")
 
         for iteration in range(self.max_iterations):
+            if _cancelled():
+                yield {"type": "cancelled", "text": "已停止"}
+                return
             logger.info("Assistant iteration %d/%d", iteration + 1, self.max_iterations)
 
-            # 调用 LLM
-            try:
-                response = llm_with_tools.invoke(messages)
-            except Exception as e:
-                logger.error("LLM invoke failed: %s", e)
-                return f"抱歉，我遇到了技术问题：{e}"
+            response = None
+            if can_stream:
+                try:
+                    full = None
+                    for chunk in llm_with_tools.stream(messages):
+                        if _cancelled():
+                            yield {"type": "cancelled", "text": "已停止"}
+                            return
+                        full = chunk if full is None else full + chunk
+                        text = getattr(chunk, "content", "")
+                        if isinstance(text, list):  # 兼容多模态 content block
+                            text = "".join(
+                                b.get("text", "") for b in text if isinstance(b, dict)
+                            )
+                        if text:
+                            yield {"type": "delta", "text": text}
+                    response = full
+                except Exception as e:
+                    logger.error("LLM stream failed: %s", e)
+                    yield {"type": "error", "message": str(e)}
+                    return
+            else:
+                try:
+                    response = llm_with_tools.invoke(messages)
+                except Exception as e:
+                    logger.error("LLM invoke failed: %s", e)
+                    yield {"type": "error", "message": str(e)}
+                    return
+                content = getattr(response, "content", "") or ""
+                if content:
+                    yield {"type": "delta", "text": content}
+
+            if response is None:
+                yield {"type": "error", "message": "LLM 未返回任何内容"}
+                return
 
             # 检查是否有工具调用
             tool_calls = getattr(response, "tool_calls", None)
             if not tool_calls:
-                # 没有工具调用，直接返回回答
-                content = getattr(response, "content", "")
-                if content:
-                    return content
-                return "抱歉，我没有生成有效回答。"
+                content = getattr(response, "content", "") or ""
+                if isinstance(content, list):
+                    content = "".join(
+                        b.get("text", "") for b in content if isinstance(b, dict)
+                    )
+                yield {"type": "final", "text": content}
+                return
 
-            # 有工具调用，执行工具
+            # 有工具调用：delta 流里 content 通常为空，执行工具后继续
             messages.append(response)
-
             for tool_call in tool_calls:
+                if _cancelled():
+                    yield {"type": "cancelled", "text": "已停止"}
+                    return
                 tool_name = tool_call.get("name", "")
                 tool_args = tool_call.get("args", {})
                 tool_id = tool_call.get("id", "")
 
                 logger.info("Calling tool: %s with args: %s", tool_name, tool_args)
+                yield {"type": "tool_start", "tool": tool_name, "args": tool_args}
 
-                # 执行工具
-                result = registry.dispatch(tool_name, tool_args, llm=self.llm)
+                # cancel_event 透传给支持它的工具（如 run_deep_analysis）
+                result = registry.dispatch(
+                    tool_name, tool_args, llm=self.llm, cancel_event=cancel_event,
+                )
+                if _cancelled():
+                    yield {"type": "cancelled", "text": "已停止"}
+                    return
+                yield {"type": "tool_end", "tool": tool_name}
 
-                # 添加工具结果到消息
-                messages.append(AIMessage(
-                    content=f"Tool {tool_name} result: {result}",
-                    tool_calls=[{"id": tool_id, "name": tool_name, "args": tool_args}],
+                # 工具结果必须以 ToolMessage 回传（带 tool_call_id），
+                # 否则 OpenAI 兼容接口会报 400: assistant message with
+                # 'tool_calls' must be followed by tool messages
+                messages.append(ToolMessage(
+                    content=result,
+                    tool_call_id=tool_id or tool_name,
+                    name=tool_name,
                 ))
 
-            # 继续循环，让 LLM 基于工具结果生成回答
-
-        # 达到最大迭代次数，返回最后一次 LLM 的回答
+        # 达到最大迭代次数
         logger.warning("Assistant reached max iterations: %d", self.max_iterations)
-        last_response = messages[-1] if messages else None
-        content = getattr(last_response, "content", "") if last_response else ""
-        return content or "抱歉，我思考了太久，请简化你的问题再试一次。"
+        yield {"type": "final", "text": "抱歉，我思考了太久，请简化你的问题再试一次。"}
+
+    def answer_stream(
+        self,
+        question: str,
+        session_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+        cancel_event=None,
+    ):
+        """流式回答：产出 status / delta / tool_start / tool_end / final / error 事件
+
+        cancel_event（threading.Event）置位时在协作点尽快中止（前端断开连接）。"""
+        # 1. 意图识别（LLM 分类，失败回退关键词匹配）
+        yield {"type": "status", "text": "识别意图…"}
+        intent = classify_intent_llm(question, self.llm)
+        logger.info("Assistant intent: %s for question: %s", intent, question[:100])
+        yield {"type": "status", "text": f"意图：{intent}"}
+
+        # 2. 加载对话历史
+        history: List[BaseMessage] = []
+        if session_id:
+            history = self.conversation.get_history(session_id)
+
+        # 3. 获取工具
+        tool_names = get_default_tools(intent)
+        tools = registry.get_definitions(tool_names)
+
+        # 4. 构建消息
+        messages: List[BaseMessage] = [SystemMessage(content=self._build_system_prompt(intent, context))]
+        messages.extend(history)
+        messages.append(HumanMessage(content=question))
+
+        # 5. ReAct 循环（流式）
+        final_text = ""
+        cancelled = False
+        for event in self._react_loop_events(messages, tools, intent, cancel_event=cancel_event):
+            if event.get("type") == "final":
+                final_text = event.get("text", final_text)
+            elif event.get("type") == "cancelled":
+                cancelled = True
+            yield event
+
+        # 6. 保存对话历史（被取消的不写入，避免半截回答污染上下文）
+        if session_id and final_text and not cancelled:
+            self.conversation.add_message(session_id, "user", question)
+            self.conversation.add_message(session_id, "assistant", final_text)
 
     def get_supported_intents(self) -> List[str]:
         """获取支持的意图列表"""
-        return list(get_default_tools.keys())
+        from dromx.assistant.intents import INTENT_DEFAULT_TOOLS
+        return list(INTENT_DEFAULT_TOOLS.keys())

@@ -32,6 +32,18 @@
   --color-warn-border: rgba(227, 179, 65, 0.35);
   --color-mint: #3dd9c5;             /* chart accent */
   --color-violet: #7c6bf5;           /* chart accent */
+}
+
+/* 涨跌配色：红涨绿跌（A 股习惯）。<html data-quote-color="cn"> 时切换，
+   默认（intl）为上方 :root 的绿涨红跌。见 src/lib/quoteColor.ts。 */
+:root[data-quote-color="cn"] {
+  --color-bull: #f85149;             /* up / buy — 红涨 */
+  --color-bear: #10b981;             /* down / sell — 绿跌 */
+  --color-bull-tint: rgba(248, 81, 73, 0.12);
+  --color-bear-tint: rgba(16, 185, 129, 0.12);
+}
+
+:root {
 
   /* Dark shell (sidebar): one step deeper than the canvas so the rail reads
      as the app's spine. Text is white at stepped opacities; the active item

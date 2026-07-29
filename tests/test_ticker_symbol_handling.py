@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 from cli.utils import normalize_ticker_symbol
-from dromx.agents.utils.agent_utils import build_instrument_context
+from dromx.core.agent_utils import build_instrument_context
 
 
 @pytest.mark.unit

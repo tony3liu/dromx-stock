@@ -163,7 +163,7 @@ def _depth_to_rounds(depth: int) -> int:
 def run_analysis_once(
     ticker: str, trade_date: str, analysts: list[str], depth: int,
     *, shares: float | None = None, cost_basis: float | None = None,
-    holdings: list[str] | None = None, on_section=None,
+    holdings: list[str] | None = None, on_section=None, should_stop=None,
 ) -> tuple[dict, str | None]:
     """Run the full pipeline ONCE and return (final_state, rating).
 
@@ -200,18 +200,27 @@ def run_analysis_once(
 
     asset_type = "stock"
     company, td = ticker, trade_date
-    past_context = graph.memory_log.get_past_context(company)
-    instrument_context = graph.resolve_instrument_context(company, asset_type)
-    portfolio_context = graph._build_portfolio_context(company, td)
-    market_context = graph._build_market_context(company, td)
-    instrument_type, framework_note = graph._resolve_instrument_type(company, td)
+    # run-start 上下文互相独立（纯查询，各自 degrade），并行预取
+    from dromx.graph.prefetch import parallel_prefetch
+
+    ctx = parallel_prefetch({
+        "past_context": lambda: graph.memory_log.get_past_context(company),
+        "instrument_context": lambda: graph.resolve_instrument_context(company, asset_type),
+        "portfolio_context": lambda: graph._build_portfolio_context(company, td),
+        "market_context": lambda: graph._build_market_context(company, td),
+        "instrument_type": lambda: graph._resolve_instrument_type(company, td),
+    }, label=f"run-start context({company})")
+    instrument_type, framework_note = ctx["instrument_type"]
     graph._resolve_pending_entries(company)
     position_context = build_position_context(company, td, shares, cost_basis)
     init_state = graph.propagator.create_initial_state(
         company, td, asset_type=asset_type,
-        past_context=past_context, instrument_context=instrument_context,
-        portfolio_context=portfolio_context, market_context=market_context,
-        instrument_type=instrument_type, framework_note=framework_note,
+        past_context=ctx["past_context"],
+        instrument_context=ctx["instrument_context"],
+        portfolio_context=ctx["portfolio_context"],
+        market_context=ctx["market_context"],
+        instrument_type=instrument_type,
+        framework_note=framework_note,
         position_context=position_context,
     )
     args = graph.propagator.get_graph_args()
@@ -219,6 +228,10 @@ def run_analysis_once(
     merged: dict[str, Any] = {}
     seen: set[str] = set()
     for chunk in graph.graph.stream(init_state, **args):
+        # 协作式取消：节点间检查，避免用户停止后继续烧 LLM token
+        if should_stop is not None and should_stop():
+            from dromx.assistant.cancel import CancelledError
+            raise CancelledError(f"analysis of {company} cancelled by user")
         if not isinstance(chunk, dict):
             continue
         merged.update(chunk)
@@ -230,7 +243,7 @@ def run_analysis_once(
                         seen.add(key)
                         on_section(key, label, val)
 
-    from dromx.agents.utils.rating import parse_rating
+    from dromx.core.rating import parse_rating
     decision = merged.get("final_trade_decision", "") or ""
     rating = parse_rating(decision) if decision else None
 
@@ -318,12 +331,17 @@ def _worker(handle: RunHandle) -> None:
         # streamed run matches a normal propagate() run exactly.
         company = handle.ticker
         td = handle.trade_date
-        logger.info("run %s pre-fetching run-start context…", handle.id)
-        past_context = graph.memory_log.get_past_context(company)
-        instrument_context = graph.resolve_instrument_context(company, asset_type)
-        portfolio_context = graph._build_portfolio_context(company, td)
-        market_context = graph._build_market_context(company, td)
-        instrument_type, framework_note = graph._resolve_instrument_type(company, td)
+        logger.info("run %s pre-fetching run-start context (parallel)…", handle.id)
+        from dromx.graph.prefetch import parallel_prefetch
+
+        ctx = parallel_prefetch({
+            "past_context": lambda: graph.memory_log.get_past_context(company),
+            "instrument_context": lambda: graph.resolve_instrument_context(company, asset_type),
+            "portfolio_context": lambda: graph._build_portfolio_context(company, td),
+            "market_context": lambda: graph._build_market_context(company, td),
+            "instrument_type": lambda: graph._resolve_instrument_type(company, td),
+        }, label=f"run {handle.id} context")
+        instrument_type, framework_note = ctx["instrument_type"]
         graph._resolve_pending_entries(company)
         # Position-aware analysis: if the user declared a position in THIS name,
         # inject it (with live P&L) so the PM/Trader manage that position.
@@ -333,9 +351,12 @@ def _worker(handle: RunHandle) -> None:
         )
         init_state = graph.propagator.create_initial_state(
             company, td, asset_type=asset_type,
-            past_context=past_context, instrument_context=instrument_context,
-            portfolio_context=portfolio_context, market_context=market_context,
-            instrument_type=instrument_type, framework_note=framework_note,
+            past_context=ctx["past_context"],
+            instrument_context=ctx["instrument_context"],
+            portfolio_context=ctx["portfolio_context"],
+            market_context=ctx["market_context"],
+            instrument_type=instrument_type,
+            framework_note=framework_note,
             position_context=position_context,
         )
         args = graph.propagator.get_graph_args()
@@ -363,7 +384,7 @@ def _worker(handle: RunHandle) -> None:
                         })
 
         handle.final_state = merged
-        from dromx.agents.utils.rating import parse_rating
+        from dromx.core.rating import parse_rating
         decision = merged.get("final_trade_decision", "") or ""
         handle.rating = parse_rating(decision) if decision else None
         handle.status = "done"

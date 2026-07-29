@@ -169,6 +169,20 @@ class ToolRegistry:
             return json.dumps({"error": f"Unknown tool: {name}"}, ensure_ascii=False)
 
         try:
+            # 只透传 handler 声明了的 kwargs（llm/config 等），
+            # 避免签名为 (args) 的 handler 被额外 kwarg 打爆
+            import inspect
+
+            try:
+                sig = inspect.signature(entry.handler)
+                accepts_var_kw = any(
+                    p.kind == inspect.Parameter.VAR_KEYWORD
+                    for p in sig.parameters.values()
+                )
+                if not accepts_var_kw:
+                    kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+            except (TypeError, ValueError):  # 部分 callable 无法取签名
+                pass
             result = entry.handler(args, **kwargs)
             # 统一返回 JSON 字符串
             if isinstance(result, str):

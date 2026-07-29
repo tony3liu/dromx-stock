@@ -52,14 +52,14 @@ def create_re_analysis(llm):
         ticker = state["company_of_interest"]
         instrument_context = get_instrument_context_from_state(state)
 
-        updates = {}
-        for key in targets:
+        def _re_examine(key: str) -> tuple[str, str | None]:
+            """Re-examine one analyst report; returns (report_key, updated|None)."""
             report_key = _KEY_TO_REPORT.get(key) or _KEY_TO_REPORT.get(_LENS_TO_KEY.get(key, ""))
             if not report_key:
-                continue
+                return "", None
             original = state.get(report_key, "") or ""
             if not original:
-                continue
+                return "", None
             prompt = (
                 f"You are re-examining the {key} analyst's report for {ticker} "
                 f"after the Event Impact assessor flagged a premise-changing "
@@ -79,10 +79,24 @@ def create_re_analysis(llm):
                 resp = llm.invoke(prompt)
                 updated = getattr(resp, "content", str(resp))
                 if updated and len(updated.strip()) > 50:
-                    updates[report_key] = updated
+                    return report_key, updated
             except Exception as exc:  # noqa: BLE001 — leave the original intact
                 logger.warning("Re-Analysis: %s re-examination failed: %s", key, exc)
-                continue
+            return "", None
+
+        # 各 target 互相独立、写不同 report_key —— 线程并行，失败留原文
+        updates = {}
+        if len(targets) > 1:
+            from concurrent.futures import ThreadPoolExecutor
+
+            with ThreadPoolExecutor(max_workers=min(len(targets), 5)) as ex:
+                for report_key, updated in ex.map(_re_examine, targets):
+                    if report_key and updated:
+                        updates[report_key] = updated
+        else:
+            report_key, updated = _re_examine(targets[0])
+            if report_key and updated:
+                updates[report_key] = updated
         return updates
 
     return re_analysis_node
