@@ -168,6 +168,56 @@ def _get_verified_market_snapshot(args: dict) -> str:
         return tool_error(f"Failed to get verified market snapshot: {e}")
 
 
+# ---------------------------------------------------------------------------
+# 金十 MCP：商品/外汇行情 + 财经日历（需要 jin10_token）
+# ---------------------------------------------------------------------------
+
+def _has_jin10_token() -> bool:
+    import os
+    return any(
+        os.environ.get(n, "").strip()
+        for n in ("jin10_token", "JIN10_BEARER_TOKEN", "JIN10_TOKEN")
+    )
+
+
+def _get_commodity_quote(args: dict) -> str:
+    """商品/外汇实时报价（金十）"""
+    code = args.get("code", "")
+    if not code:
+        return tool_error("Missing required param: code")
+    try:
+        from dromx.dataflows.jin10 import get_quote
+        return tool_result({"data": get_quote(code)})
+    except Exception as e:
+        return tool_error(f"Failed to get quote: {e}")
+
+
+def _get_commodity_kline(args: dict) -> str:
+    """商品/外汇分钟级 K 线（金十）"""
+    code = args.get("code", "")
+    if not code:
+        return tool_error("Missing required param: code")
+    try:
+        from dromx.dataflows.jin10 import get_kline
+        return tool_result({"data": get_kline(code, int(args.get("count", 30)))})
+    except Exception as e:
+        return tool_error(f"Failed to get kline: {e}")
+
+
+def _get_economic_calendar(args: dict) -> str:
+    """财经日历（金十）"""
+    try:
+        from dromx.dataflows.jin10 import get_calendar
+        items = get_calendar()
+        if not items:
+            return tool_error("财经日历暂无数据")
+        # 按公布时间倒序（最新/即将公布的在前），保留星级和多空影响字段
+        items.sort(key=lambda x: str(x.get("pub_time") or ""), reverse=True)
+        return tool_result({"data": items[:50], "count": len(items)})
+    except Exception as e:
+        return tool_error(f"Failed to get calendar: {e}")
+
+
 # 注册工具
 registry.register(
     name="get_stock_data",
@@ -371,6 +421,55 @@ registry.register(
     },
     handler=_get_verified_market_snapshot,
     description="获取验证过的市场快照",
+)
+
+registry.register(
+    name="get_commodity_quote",
+    toolset="data",
+    schema={
+        "description": "获取黄金/白银/原油/外汇等品种的实时报价（金十数据）。代码如 XAUUSD（现货黄金）、XAGUSD（现货白银）、USOIL（WTI原油）、DXY（美元指数）。当用户问黄金/原油/外汇价格时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "description": "品种代码，如 XAUUSD, XAGUSD, USOIL, DXY"},
+            },
+            "required": ["code"],
+        },
+    },
+    handler=_get_commodity_quote,
+    check_fn=_has_jin10_token,
+    description="黄金/原油/外汇实时报价（金十）",
+)
+
+registry.register(
+    name="get_commodity_kline",
+    toolset="data",
+    schema={
+        "description": "获取黄金/白银/原油/外汇等品种的分钟级 K 线（金十数据）。代码同 get_commodity_quote。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "description": "品种代码，如 XAUUSD"},
+                "count": {"type": "integer", "description": "K 线条数，默认 30，最大 200"},
+            },
+            "required": ["code"],
+        },
+    },
+    handler=_get_commodity_kline,
+    check_fn=_has_jin10_token,
+    description="黄金/原油/外汇分钟级 K 线（金十）",
+)
+
+registry.register(
+    name="get_economic_calendar",
+    toolset="data",
+    schema={
+        "description": "获取财经日历：各国重要经济数据和事件（非农、CPI、GDP、央行利率决议等）的公布时间。当用户问『最近有什么重要数据/事件』『非农什么时候公布』时调用。",
+        "parameters": {"type": "object", "properties": {}},
+    },
+    handler=_get_economic_calendar,
+    check_fn=_has_jin10_token,
+    description="财经日历（非农/CPI/央行决议公布时间）",
 )
 
 

@@ -91,8 +91,11 @@ def classify_intent_llm(question: str, llm) -> str:
     return classify_intent(question)
 
 
-# 全意图常驻工具（Hermes 思路：核实类工具始终可用，由 LLM 自主决定何时调用）
-UNIVERSAL_TOOLS: list[str] = ["resolve_ticker", "web_search", "web_read"]
+# 全意图常驻工具（Hermes 思路：核实/查询类工具始终可用，由 LLM 自主决定何时调用）
+UNIVERSAL_TOOLS: list[str] = [
+    "resolve_ticker", "web_search", "web_read",
+    "get_commodity_quote", "get_commodity_kline", "get_economic_calendar",
+]
 
 
 def get_default_tools(intent: str) -> list[str]:

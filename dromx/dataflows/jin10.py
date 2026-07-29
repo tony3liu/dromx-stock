@@ -314,3 +314,39 @@ def get_global_news(
     if not body:
         return f"No global news found between {start_date} and {curr_date}"
     return f"## Global Market News, from {start_date} to {curr_date}:\n\n{body}"
+
+
+# ---------------------------------------------------------------------------
+# 行情报价 / K线 / 财经日历
+# ---------------------------------------------------------------------------
+
+def get_quote(code: str) -> dict:
+    """实时报价（黄金/白银/原油/外汇等品种）。
+
+    返回 {code, name, time, open, close, high, low, volume, ups_price, ups_percent}。
+    """
+    code = (code or "").strip().upper()
+    if not code:
+        raise ValueError("code required")
+    data = call_tool("get_quote", {"code": code})
+    if isinstance(data, dict) and isinstance(data.get("data"), dict):
+        return data["data"]
+    return data if isinstance(data, dict) else {"raw": data}
+
+
+def get_kline(code: str, count: int = 30) -> dict:
+    """分钟级 K 线。返回 {code, name, klines: [{time, open, high, low, close, volume}]}"""
+    code = (code or "").strip().upper()
+    if not code:
+        raise ValueError("code required")
+    count = max(1, min(int(count), 200))
+    data = call_tool("get_kline", {"code": code, "count": count})
+    if isinstance(data, dict) and isinstance(data.get("data"), dict):
+        return data["data"]
+    return data if isinstance(data, dict) else {"raw": data}
+
+
+def get_calendar() -> list[dict]:
+    """财经日历（各国经济数据/事件：非农、CPI、央行决议等）"""
+    data = call_tool("list_calendar", {})
+    return _as_list(data)
