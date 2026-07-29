@@ -28,6 +28,7 @@ from .errors import (
     VendorRateLimitError,
 )
 from .fred import get_macro_data as get_fred_macro_data
+from .jin10 import get_global_news as get_global_news_jin10
 from .google_news import (
     get_global_news_google,
     get_news_google,
@@ -198,6 +199,7 @@ VENDOR_METHODS = {
         "yfinance": get_news_yfinance,
     },
     "get_global_news": {
+        "jin10": get_global_news_jin10,
         "google": get_global_news_google,
         "eastmoney_news": get_eastmoney_global_news_cn,
         "yfinance": get_global_news_yfinance,

@@ -15,6 +15,7 @@ safety, exactly like the yfinance path.
 from __future__ import annotations
 
 import logging
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -32,16 +33,43 @@ _RSS_URL = "https://news.google.com/rss/search"
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; DromX/1.0)"}
 _TIMEOUT = 15
 
+# 熔断器：连接级失败（超时/拒连/DNS）说明 news.google.com 在当前网络
+# 不可达（如国内网络），之后 TTL 内所有调用直接抛异常跳过——不再每次
+# 白等 15s 超时，同时让 route_to_vendor 立即降级到 eastmoney 等备用源。
+_CIRCUIT_TTL_SECONDS = 1800  # 30 分钟
+_circuit_open_until = 0.0
+
+
+class GoogleNewsUnreachableError(Exception):
+    """news.google.com 在当前网络不可达（熔断器开启或连接失败）"""
+
 
 def _fetch_rss(query: str) -> list[dict]:
-    """Fetch and parse a Google News RSS search into article dicts."""
+    """Fetch and parse a Google News RSS search into article dicts.
+
+    连接失败会抛出（而非返回 []），让 vendor router 降级到备用源；
+    仅解析失败/无结果才返回 []。
+    """
+    global _circuit_open_until
+    if time.monotonic() < _circuit_open_until:
+        raise GoogleNewsUnreachableError(
+            "news.google.com unreachable (circuit open, "
+            f"{int(_circuit_open_until - time.monotonic())}s left)"
+        )
     params = {"q": query, "hl": "en-US", "gl": "US", "ceid": "US:en"}
     try:
         resp = requests.get(_RSS_URL, params=params, headers=_HEADERS, timeout=_TIMEOUT)
         resp.raise_for_status()
     except requests.RequestException as exc:
-        logger.warning("Google News RSS request failed for %r: %s", query, exc)
-        return []
+        if isinstance(exc, (requests.ConnectTimeout, requests.ConnectionError, requests.ReadTimeout)):
+            _circuit_open_until = time.monotonic() + _CIRCUIT_TTL_SECONDS
+            logger.warning(
+                "Google News unreachable for %r (%s); circuit open for %ds",
+                query, exc, _CIRCUIT_TTL_SECONDS,
+            )
+        else:
+            logger.warning("Google News RSS request failed for %r: %s", query, exc)
+        raise
 
     try:
         root = ET.fromstring(resp.content)
@@ -139,13 +167,26 @@ def get_global_news_google(
 
     all_articles: list[dict] = []
     seen = set()
+    failures = 0
+    last_error: Exception | None = None
     for query in search_queries:
-        for art in _fetch_rss(query):
+        try:
+            articles = _fetch_rss(query)
+        except Exception as exc:  # noqa: BLE001 — 单个 query 失败不中断其余
+            failures += 1
+            last_error = exc
+            continue
+        for art in articles:
             if art["title"] not in seen:
                 seen.add(art["title"])
                 all_articles.append(art)
         if len(all_articles) >= limit * 3:
             break
+
+    # 所有 query 都失败（如 google 被网络封锁）→ 抛出，让 vendor router
+    # 降级到 eastmoney 等备用源；部分失败则按现有逻辑用拿到的结果渲染。
+    if not all_articles and failures == len(search_queries) and last_error is not None:
+        raise last_error
 
     if not all_articles:
         return f"No global news found for {curr_date}"

@@ -148,7 +148,7 @@ DEFAULT_CONFIG = _apply_env_overrides({
         "fundamental_data": "sec,eastmoney,mootdx,tencent",  # US->SEC, US/HK->eastmoney, A->mootdx, fallback tencent
         # Three-statement vendors: SEC (US), Eastmoney (US/HK), Sina (A-share).
         "financial_statements": "sec,eastmoney,sina,tencent",
-        "news_data": "google,eastmoney_news",          # Options: google, eastmoney_news, alpha_vantage, yfinance
+        "news_data": "jin10,google,eastmoney_news",   # Options: jin10, google, eastmoney_news, alpha_vantage, yfinance
         "macro_data": "fred",                          # Options: fred (needs FRED_API_KEY)
         "prediction_markets": "polymarket",            # Options: polymarket (keyless)
     },
