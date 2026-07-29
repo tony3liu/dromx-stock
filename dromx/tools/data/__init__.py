@@ -427,11 +427,11 @@ registry.register(
     name="get_commodity_quote",
     toolset="data",
     schema={
-        "description": "获取黄金/白银/原油/外汇等品种的实时报价（金十数据）。代码如 XAUUSD（现货黄金）、XAGUSD（现货白银）、USOIL（WTI原油）、DXY（美元指数）。当用户问黄金/原油/外汇价格时调用。",
+        "description": "获取全球指数/商品/外汇的实时报价（金十数据）。支持：指数（KS11韩国KOSPI、DJI道指、SPX标普、000001上证、000300沪深300、399006创业板指、FTSE等）、商品（XAUUSD黄金、XAGUSD白银、USOIL WTI原油、UKOIL布油、COPPER铜）、外汇（EURUSD、USDJPY等）。不支持个股——个股行情请用 get_stock_data。",
         "parameters": {
             "type": "object",
             "properties": {
-                "code": {"type": "string", "description": "品种代码，如 XAUUSD, XAGUSD, USOIL, DXY"},
+                "code": {"type": "string", "description": "品种代码：XAUUSD黄金 / XAGUSD白银 / USOIL原油 / KS11韩国KOSPI / SPX标普 / 000300沪深300 等"},
             },
             "required": ["code"],
         },
