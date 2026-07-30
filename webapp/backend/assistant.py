@@ -30,10 +30,10 @@ def _get_planner() -> AssistantPlanner:
     """获取或创建 AssistantPlanner 单例"""
     global _planner
     if _planner is None:
-        from dromx.default_config import DEFAULT_CONFIG
+        from dromx.dataflows.config import get_config
         from dromx.llm_clients import create_llm_client
 
-        cfg = DEFAULT_CONFIG.copy()
+        cfg = get_config()  # 含页面配置覆盖（usersettings 经 set_config 同步）
         client = create_llm_client(
             provider=cfg["llm_provider"],
             model=cfg["quick_think_llm"],
@@ -42,6 +42,12 @@ def _get_planner() -> AssistantPlanner:
         llm = client.get_llm()
         _planner = AssistantPlanner(llm=llm, conversation_manager=_conversation_manager)
     return _planner
+
+
+def reset_planner() -> None:
+    """重置 planner 单例（LLM 配置在设置页变更后调用，下次提问生效）"""
+    global _planner
+    _planner = None
 
 
 @router.post("/api/assistant/ask")

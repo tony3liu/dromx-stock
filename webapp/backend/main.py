@@ -21,6 +21,12 @@ from dotenv import load_dotenv
 
 load_dotenv()  # noqa: E402 — intentional: must run before the imports below
 
+# 页面配置层（user_settings.json）覆盖 .env —— 必须在 dromx 各模块 import
+# 之前应用，这样 default_config 读到的就是覆盖后的值
+from webapp.backend.usersettings import apply_on_startup  # noqa: E402
+
+apply_on_startup()  # noqa: E402
+
 import asyncio
 import json
 import logging
@@ -140,6 +146,37 @@ def _get_report_llm():
 
         _report_llm = DromXGraph(config=DEFAULT_CONFIG.copy()).deep_thinking_llm
     return _report_llm
+
+
+@app.get("/api/settings/env")
+def get_env_settings(_: None = Depends(auth.require_auth)) -> dict:
+    """页面配置层状态：每个可配置 key 的来源（页面/.env/未配置）。
+
+    secret 类 key 只回掩码，不回原文。
+    """
+    from webapp.backend import usersettings
+
+    return {"settings": usersettings.get_settings()}
+
+
+@app.put("/api/settings/env")
+def update_env_settings(req: dict, _: None = Depends(auth.require_auth)) -> dict:
+    """保存页面配置（优先级高于 .env）。value 为空字符串 = 清除页面配置。
+
+    LLM 相关配置变更后重置投研助手 planner（下次提问用新配置）。
+    """
+    from webapp.backend import usersettings
+
+    updates = req.get("updates") or {}
+    if not isinstance(updates, dict) or not updates:
+        raise HTTPException(status_code=422, detail="updates required")
+    try:
+        result = usersettings.update_settings(updates)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    if result["llm_changed"]:
+        assistant_api.reset_planner()
+    return result
 
 
 @app.get("/api/health")

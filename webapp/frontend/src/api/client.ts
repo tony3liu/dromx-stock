@@ -207,6 +207,15 @@ export const api = {
       body: JSON.stringify(settings),
     }),
 
+  // ── 应用配置（页面配置层，优先级高于 .env） ──────────────────────────────
+  envSettings: () => jsonFetch<{ settings: EnvSettingItem[] }>("/api/settings/env"),
+
+  updateEnvSettings: (updates: Record<string, string>) =>
+    jsonFetch<{ updated: string[]; llm_changed: boolean }>("/api/settings/env", {
+      method: "PUT",
+      body: JSON.stringify({ updates }),
+    }),
+
   // ── comprehensive report PDF ───────────────────────────────────────────
   // Fetch the generated report as a PDF blob (carries the auth token) and
   // trigger a direct browser download — no print dialog.

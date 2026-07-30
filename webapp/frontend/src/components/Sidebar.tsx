@@ -1,4 +1,4 @@
-import { Plus, History as HistoryIcon, GitCompareArrows, PanelLeftClose, PanelLeftOpen, Trash2, Check, X, TrendingUp, Shield, FlaskConical, Search, Bell, Settings as SettingsIcon, Bot } from "lucide-react";
+import { Plus, History as HistoryIcon, GitCompareArrows, PanelLeftClose, PanelLeftOpen, Trash2, Check, X, TrendingUp, Shield, FlaskConical, Search, Bell, Settings as SettingsIcon, Bot, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { RunSummary } from "../api/types";
@@ -27,6 +27,7 @@ export function Sidebar({
   onMarket,
   onAssistant,
   onSettings,
+  onConfig,
   onHome,
   onDeleted,
   compareActive,
@@ -38,6 +39,7 @@ export function Sidebar({
   marketActive,
   assistantActive,
   settingsActive,
+  configActive,
   refreshKey,
   collapsed,
   onToggle,
@@ -54,6 +56,7 @@ export function Sidebar({
   onMarket: () => void;
   onAssistant: () => void;
   onSettings: () => void;
+  onConfig: () => void;
   onHome: () => void;
   onDeleted: (id: string) => void;
   compareActive: boolean;
@@ -65,6 +68,7 @@ export function Sidebar({
   marketActive: boolean;
   assistantActive: boolean;
   settingsActive: boolean;
+  configActive: boolean;
   refreshKey: number;
   collapsed: boolean;
   onToggle: () => void;
@@ -120,6 +124,7 @@ export function Sidebar({
     { key: "hedge", icon: <Shield size={16} />, label: "跨品种对冲", active: hedgeActive, onClick: onHedge, group: "工具" },
     { key: "backtest", icon: <FlaskConical size={16} />, label: "策略回测", active: backtestActive, onClick: onBacktest, group: "工具" },
     { key: "settings", icon: <SettingsIcon size={16} />, label: "设置 · 通知", active: settingsActive, onClick: onSettings, group: "系统" },
+    { key: "config", icon: <SlidersHorizontal size={16} />, label: "应用配置", active: configActive, onClick: onConfig, group: "系统" },
   ];
   const NAV_GROUPS = ["工作区", "工具", "系统"];
 

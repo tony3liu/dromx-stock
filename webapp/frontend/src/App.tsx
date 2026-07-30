@@ -14,6 +14,7 @@ import { Monitor } from "./components/Monitor";
 import { Market } from "./components/Market";
 import { Assistant } from "./components/Assistant";
 import { Settings } from "./components/Settings";
+import { AppSettings } from "./components/AppSettings";
 import { Landing } from "./components/Landing";
 import { Login } from "./components/Login";
 import { api } from "./api/client";
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/app/hedge" element={<HedgeView />} />
           <Route path="/app/backtest" element={<BacktestView />} />
           <Route path="/app/settings" element={<Settings />} />
+          <Route path="/app/config" element={<AppSettings />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -104,6 +106,7 @@ function Shell() {
         marketActive={pathname === "/app/market"}
         assistantActive={pathname === "/app/assistant"}
         settingsActive={pathname === "/app/settings"}
+        configActive={pathname === "/app/config"}
         collapsed={navCollapsed}
         onToggle={() => setNavCollapsed((v) => !v)}
         onNew={() => navigate("/app")}
@@ -117,6 +120,7 @@ function Shell() {
         onMarket={() => navigate("/app/market")}
         onAssistant={() => navigate("/app/assistant")}
         onSettings={() => navigate("/app/settings")}
+        onConfig={() => navigate("/app/config")}
         onDeleted={onDeleted}
       />
       <main className="flex-1 overflow-hidden">

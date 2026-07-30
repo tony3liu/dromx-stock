@@ -394,3 +394,16 @@ export interface NotifySettings {
   system?: { enabled: boolean };
   feishu?: { webhook_url?: string; secret?: string };
 }
+
+export interface EnvSettingItem {
+  key: string;
+  label: string;
+  group: string;
+  secret: boolean;
+  hint: string;
+  placeholder: string;
+  source: "page" | "env" | null;
+  configured: boolean;
+  preview?: string;
+  value?: string;
+}
