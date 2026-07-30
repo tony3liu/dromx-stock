@@ -396,14 +396,182 @@ def price(ticker: str, date: str | None = None, days: int = 120,
         return {"ticker": ticker, "points": []}
 
 
+def _mootdx_minute_points(ticker: str, code: str, interval: str = "5m") -> list[dict]:
+    """A 股当日分时（mootdx 1 分钟线 → 聚合为 interval K 线）。
+
+    mootdx 的 K 线 category 接口在当前可用的通达信服务器上未实现
+    （NotImplementedError，日线同样受影响），但分时两个 API 可用：
+    - get_minute_time_data(market, code)：当日实时 1 分钟序列（交易时段内为部分）
+    - get_history_minute_time_data(market, code, yyyymmdd)：指定日 1 分钟序列
+
+    返回点位不含时间戳 —— 按 A 股交易时段（09:30-11:29 / 13:00-14:59，
+    各 120 分钟）依序重建北京时间轴，再按 interval 聚合 OHLC。
+    """
+    from datetime import date as _date, datetime as _dt, timedelta, timezone
+
+    import pandas as pd
+
+    from dromx.dataflows.mootdx_cn import _client
+
+    # 市场判定：优先 ticker 后缀（.SS/.SH→沪，.SZ→深），否则按代码前缀
+    t = ticker.strip().upper()
+    if t.endswith((".SS", ".SH")):
+        market = 1
+    elif t.endswith(".SZ"):
+        market = 0
+    elif code.startswith(("4", "8")):
+        return []  # 北交所 pytdx 市场号不确定，交给 yfinance
+    else:
+        market = 1 if code.startswith(("5", "6", "9")) else 0
+
+    client = _client()
+    api = client.client if hasattr(client, "client") else client
+
+    rows = None
+    try:
+        # 优先 history 接口（当日含实时增量且价格干净）；
+        # live get_minute_time_data 在 tdxpy 后端会混入竞价 junk/异常量纲
+        today = int(_date.today().strftime("%Y%m%d"))
+        rows = api.get_history_minute_time_data(market, code, today)
+    except Exception:  # noqa: BLE001
+        rows = None
+    if not rows:
+        try:
+            rows = api.get_minute_time_data(market, code)
+        except Exception:  # noqa: BLE001
+            rows = None
+    if not rows:
+        return []
+
+    prices = [float(r.get("price", 0) or 0) for r in rows]
+    vols = [float(r.get("vol", 0) or 0) for r in rows]
+    # 过滤集合竞价/脏数据：非正价格 + 偏离中位数 50% 以上的点
+    med = pd.Series([p for p in prices if p > 0]).median()
+    if not med or pd.isna(med):
+        return []
+    tz = timezone(timedelta(hours=8))
+    day = _date.today()
+    points_1m = []
+    for i, (p, v) in enumerate(zip(prices, vols)):
+        if p <= 0 or abs(p - med) / med > 0.5:
+            continue
+        minute = i if i < 120 else i - 120
+        hour, mi = (9, 30) if i < 120 else (13, 0)
+        ts = _dt(day.year, day.month, day.day, hour, mi, tzinfo=tz) + timedelta(minutes=minute)
+        points_1m.append((ts, p, v))
+    if not points_1m:
+        return []
+
+    # 聚合为 interval K 线（1m 则直接返回）
+    step = {"1m": 1, "5m": 5, "15m": 15, "30m": 30, "60m": 60}.get(interval, 5)
+    buckets: dict[int, list] = {}
+    for ts, p, v in points_1m:
+        minute_of_day = ts.hour * 60 + ts.minute
+        # 时段内对齐（09:30 / 13:00 起算）
+        base = 9 * 60 + 30 if minute_of_day < 12 * 60 else 13 * 60
+        bucket_start = base + ((minute_of_day - base) // step) * step
+        b = buckets.setdefault(bucket_start, [None, 0.0, 0.0, 0.0, ts])
+        o, h, lo, c, ts0 = b
+        b[0] = p if o is None else o
+        b[1] = max(h, p)
+        b[2] = min(lo, p) if lo else p
+        b[3] = p
+
+    out = []
+    for bucket_start in sorted(buckets):
+        o, h, lo, c, ts = buckets[bucket_start]
+        bh, bm = divmod(bucket_start, 60)
+        bts = _dt(day.year, day.month, day.day, bh, bm, tzinfo=tz)
+        out.append({
+            "time": int(bts.timestamp()),
+            "open": round(o, 4), "high": round(h, 4),
+            "low": round(lo, 4), "close": round(c, 4),
+        })
+    return out
+
+
+def _tencent_hk_minute_points(ticker: str, interval: str = "5m") -> list[dict]:
+    """港股当日分时（腾讯 hkMinute，国内直连免 key）。
+
+    Yahoo 在国内网络不稳，港股分时改走腾讯 ifzq 接口：
+    ``web.ifzq.gtimg.cn/appstock/app/hkMinute/query?code=hkXXXXX``
+    返回当日 1 分钟行 ``"HHMM price vol amount"``（香港时间 = 北京时间，UTC+8），
+    按 interval 聚合 OHLC。
+    """
+    from datetime import date as _date, datetime as _dt, timedelta, timezone
+
+    digits = "".join(ch for ch in ticker.split(".")[0] if ch.isdigit())
+    if not digits:
+        return []
+    code = f"hk{digits.zfill(5)}"  # 腾讯港股代码为 5 位零填充：700→hk00700, 7709→hk07709
+
+    import requests
+
+    s = requests.Session()
+    s.trust_env = False  # 国内服务强制直连，绕开系统代理/VPN
+    try:
+        resp = s.get(
+            "https://web.ifzq.gtimg.cn/appstock/app/hkMinute/query",
+            params={"code": code},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        payload = resp.json().get("data", {}).get(code, {})
+        lines = payload.get("data", {}).get("data") or []
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("tencent hkMinute(%s) failed: %s", code, exc)
+        return []
+    if not lines:
+        return []
+
+    tz = timezone(timedelta(hours=8))
+    day = _date.today()
+    step = {"1m": 1, "5m": 5, "15m": 15, "30m": 30, "60m": 60}.get(interval, 5)
+    buckets: dict[int, list] = {}
+    for ln in lines:
+        parts = str(ln).split()
+        if len(parts) < 2:
+            continue
+        hhmm, price_s = parts[0], parts[1]
+        try:
+            hour, minute = int(hhmm[:2]), int(hhmm[2:4])
+            price = float(price_s)
+        except (ValueError, IndexError):
+            continue
+        if price <= 0:
+            continue
+        minute_of_day = hour * 60 + minute
+        bucket_start = minute_of_day - (minute_of_day % step) if step > 1 else minute_of_day
+        b = buckets.setdefault(bucket_start, [None, 0.0, 0.0, 0.0])
+        o, h, lo, c = b
+        b[0] = price if o is None else o
+        b[1] = max(h, price)
+        b[2] = min(lo, price) if lo else price
+        b[3] = price
+
+    out = []
+    for bucket_start in sorted(buckets):
+        o, h, lo, c = buckets[bucket_start]
+        bh, bm = divmod(bucket_start, 60)
+        bts = _dt(day.year, day.month, day.day, bh, bm, tzinfo=tz)
+        out.append({
+            "time": int(bts.timestamp()),
+            "open": round(o, 4), "high": round(h, 4),
+            "low": round(lo, 4), "close": round(c, 4),
+        })
+    return out
+
+
 @app.get("/api/price/intraday/{ticker}")
 def price_intraday(ticker: str, interval: str = "5m",
                    _: None = Depends(auth.require_auth)) -> dict:
     """Intraday OHLC for real-time charting (5-minute bars).
 
     Data sources:
-    - A-shares / A-share indices: mootdx (TongDaXin TCP, real-time, China IP only)
-    - US / HK stocks & indices: yfinance (interval="5m", ~15min delayed)
+    - A-shares / A-share indices: mootdx 分时接口（TongDaXin TCP, real-time）
+    - HK stocks: 腾讯 hkMinute（国内直连, real-time）
+    - US / other: yfinance (interval="5m", ~15min delayed)
 
     Degrades to ``{"points": []}`` on any vendor failure.
     """
@@ -421,35 +589,19 @@ def price_intraday(ticker: str, interval: str = "5m",
         # Try mootdx for A-shares first (real-time, no rate limit)
         try:
             code = _normalize_cn(ticker)
-            client = _client()
-            # category=0 -> 5-minute bars
-            bars = client.bars(symbol=code, category=0, offset=240)
-            if bars is not None and len(bars) > 0:
-                df = pd.DataFrame(bars)
-                out = pd.DataFrame({
-                    "datetime": pd.to_datetime(df["datetime"], errors="coerce"),
-                    "open": pd.to_numeric(df.get("open"), errors="coerce"),
-                    "high": pd.to_numeric(df.get("high"), errors="coerce"),
-                    "low": pd.to_numeric(df.get("low"), errors="coerce"),
-                    "close": pd.to_numeric(df.get("close"), errors="coerce"),
-                    "volume": pd.to_numeric(df.get("vol"), errors="coerce"),
-                })
-                out = out.dropna(subset=["datetime", "close"]).sort_values("datetime")
-                points = [
-                    {
-                        "time": int(row.datetime.timestamp()),
-                        "open": round(float(row.open), 4),
-                        "high": round(float(row.high), 4),
-                        "low": round(float(row.low), 4),
-                        "close": round(float(row.close), 4),
-                    }
-                    for row in out.itertuples()
-                ]
+            points = _mootdx_minute_points(ticker, code, interval)
+            if points:
                 return {"ticker": ticker, "interval": interval, "points": points}
         except (VendorRateLimitError, NoMarketDataError, ImportError):
-            pass  # fall through to yfinance
+            pass  # fall through
 
-        # yfinance for US / HK / indices
+        # HK stocks: 腾讯 hkMinute（国内直连免 key；Yahoo 在国内网络不稳）
+        if ticker.upper().endswith(".HK"):
+            points = _tencent_hk_minute_points(ticker, interval)
+            if points:
+                return {"ticker": ticker, "interval": interval, "points": points}
+
+        # yfinance for US / other
         canonical = normalize_symbol(ticker)
         df = yf.download(
             canonical,

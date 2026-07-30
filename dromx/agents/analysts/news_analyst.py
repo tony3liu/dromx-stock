@@ -284,7 +284,17 @@ def _fetch_macro(curr_date: str) -> str:
     The series are independent network calls, so they are fetched in parallel
     and re-assembled in ``_MACRO_INDICATORS`` order — one failing series still
     degrades to a placeholder without sinking the block.
+
+    未配置 FRED_API_KEY 时整体跳过（一次调用都不发），避免 6 个序列各自
+    走一遍 vendor 链、刷出十几条 "not configured" 警告。
     """
+    import os
+
+    if not os.environ.get("FRED_API_KEY", "").strip():
+        return ("### Macro indicators\n<unavailable: FRED_API_KEY not set — "
+                "macro block skipped; get a free key at "
+                "https://fred.stlouisfed.org/docs/api/api_key.html>")
+
     from dromx.graph.prefetch import parallel_prefetch
 
     def _fetch_one(label: str, key: str) -> str:

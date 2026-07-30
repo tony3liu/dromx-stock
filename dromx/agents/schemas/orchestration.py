@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 AnalystKey = Literal["market", "sentiment", "news", "fundamentals", "industry"]
 DepthTier = Literal["standard", "deep"]
@@ -46,6 +46,38 @@ class AnalystAssignment(BaseModel):
         default_factory=list,
         description="Skill names to mount for this analyst (overrides auto-selection). Empty = auto.",
     )
+
+    @field_validator("depth", mode="before")
+    @classmethod
+    def _coerce_depth(cls, v):
+        """容错：模型常把 depth 输出成数字档位（1/2/3）或其他字符串。
+
+        数字约定：1-2 → standard，3+ → deep。
+        """
+        if isinstance(v, bool):
+            return "standard"
+        if isinstance(v, (int, float)):
+            return "deep" if v >= 3 else "standard"
+        if isinstance(v, str):
+            s = v.strip().lower()
+            if s in ("deep", "deep_dive", "deep-dive", "深度"):
+                return "deep"
+            if s.isdigit():
+                return "deep" if int(s) >= 3 else "standard"
+            return "standard"
+        return "standard"
+
+    @field_validator("priority", mode="before")
+    @classmethod
+    def _coerce_priority(cls, v):
+        """容错：模型常把 priority 输出成 high/medium/low 字符串"""
+        if isinstance(v, str):
+            return {
+                "high": 1, "highest": 1, "top": 1,
+                "medium": 2, "med": 2, "normal": 2,
+                "low": 3, "lowest": 3,
+            }.get(v.strip().lower(), 2)
+        return v
 
 
 class OrchestrationPlan(BaseModel):

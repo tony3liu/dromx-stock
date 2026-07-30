@@ -68,11 +68,30 @@ const QUICK_QUESTIONS = [
   "帮我看看持仓风险",
 ];
 
+// 短期记忆：会话内容持久化到 sessionStorage —— 页面刷新不丢上下文，
+// 关闭标签页自动清空（正好对应"一次对话窗口"的生命周期）。
+const CHAT_STORAGE_KEY = "dromx-assistant-chat";
+
+function loadChat(): { messages: Message[]; sessionId: string | null } {
+  try {
+    const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return { messages: [], sessionId: null };
+    const parsed = JSON.parse(raw);
+    return {
+      messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+      sessionId: typeof parsed.sessionId === "string" ? parsed.sessionId : null,
+    };
+  } catch {
+    return { messages: [], sessionId: null };
+  }
+}
+
 export function Assistant() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [initialChat] = useState(loadChat);
+  const [messages, setMessages] = useState<Message[]>(initialChat.messages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(initialChat.sessionId);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -80,6 +99,15 @@ export function Assistant() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // 会话变化时持久化（刷新恢复上下文）
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({ messages, sessionId }));
+    } catch {
+      /* 存储满等场景忽略 */
+    }
+  }, [messages, sessionId]);
 
   const stop = () => {
     abortRef.current?.abort();
