@@ -41,7 +41,7 @@ agent，配深度分析、板块数据、持仓复盘、财经日历、联网核
 ## 长什么样
 
 <div align="center">
-  <img src="docs/images/assistant.png" alt="投研助手：多轮对话 + 工具调用可见" width="860" />
+  <img src="assets/screenshots/assistant.png" alt="投研助手：多轮对话 + 工具调用可见" width="860" />
   <p><i>投研助手：随便问，工具调用过程可见，随时可停</i></p>
 </div>
 
@@ -63,7 +63,7 @@ agent，配深度分析、板块数据、持仓复盘、财经日历、联网核
 ```
 
 <div align="center">
-  <img src="docs/images/market.png" alt="大盘工作台：日K/分时 + 自选" width="860" />
+  <img src="assets/screenshots/market.png" alt="大盘工作台：日K/分时 + 自选" width="860" />
   <p><i>大盘工作台：日 K / 当日分时，A股港股国内直连实时刷新</i></p>
 </div>
 
