@@ -232,3 +232,6 @@ webapp/frontend/scripts/
 webapp/frontend/shots/
 .gitignore
 docs/
+brand/logo-horizontal.svg
+brand/logo-icon.svg
+.gitignore

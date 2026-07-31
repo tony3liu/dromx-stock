@@ -1,5 +1,5 @@
 // Thin REST client for the backend. All paths go through the Vite /api proxy.
-import type { AIGenerateResult, AlertEvent, BacktestEstimate, BacktestRecord, CreateRunRequest, FactorExposure, HedgeReport, IntradaySeries, Job, Market, MonitorRule, NotifyChannels, NotifySettings, PerformanceReport, PriceSeries, RunRecord, RunSummary, SizingReport, StrategyListResponse, StrategyMeta, StrategyRunResult } from "./types";
+import type { AIGenerateResult, AlertEvent, BacktestEstimate, BacktestRecord, CreateRunRequest, EnvSettingItem, FactorExposure, HedgeReport, IntradaySeries, Job, Market, MonitorRule, NotifyChannels, NotifySettings, PerformanceReport, PriceSeries, RunRecord, RunSummary, SizingReport, StrategyListResponse, StrategyMeta, StrategyRunResult } from "./types";
 import { authHeaders, notifyUnauthorized } from "../lib/auth";
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {

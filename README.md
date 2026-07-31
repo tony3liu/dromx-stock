@@ -1,37 +1,148 @@
-# DromX
+<div align="center">
+  <img src="webapp/frontend/src/assets/brand/logo-icon.png" alt="DromX" width="120" />
+  <h3>一个有灵魂的 AI 投研助手</h3>
+  <p>
+    问你想问的，而不是填它让你填的。<br/>
+    多智能体深度投研 · A股 / 港股 / 美股 · 国内网络全直连
+  </p>
+</div>
 
-> Multi-Agent LLM Financial Trading Framework — agent loop + skills + 取证型分析。
+---
 
-基于 DromX 架构完全重构。核心能力围绕 **agent loop + skills**(不写死 workflow):
+## 为什么做 DromX
 
-- **agent loop + skills**:分析师可调工具迭代思考(LLM 用工具深挖),skill 可插拔方法论,按 regime/instrument/market 自动挂载
-- **取证型 + 预测型分析**:异常检测 + 锚点偏差竞争 + 算法精度证据 + 跨市场传导 + 外资筹码
-- **Orchestrator**:动态选分析师 + skill(LLM 判断 instrument/regime,不硬编码)
-- **DepthController**:信号清晰度 + 事件冲击 → conclude/standard/deep_dive
-- **Re-Analysis**:事件触发重审视(前向节点,不反向遍历)
-- **PM with tools**:read_analyst_report(回溯原始报告)+ position_simulate(定量 P&L)+ web_search(serper google)
-- **多数据源**:tencent/mootdx(中)/eastmoney/sec(US)/yfinance/naver(韩)/FRED/Polymarket
-- **多 LLM provider**:OpenAI/DeepSeek/Anthropic/Google/Bedrock/Ollama
-- **webapp**:FastAPI + SSE + React(Tailwind)
-- **web_search**:serper.dev 数据源失败时 google 搜(通用 fallback,CXMT 定价/当日实时)
+市面上的"AI 投研"大多是同一个配方：**固定工作流 + 多 agent 辩论 + 数据源堆叠**。
+这个配方在交易分析业务上其实是错的：
 
-## Quick start
+- **工作流是死的，问题是活的**。真实投研问题是随机的——"存储板块见底了吗？"
+  "见底了资金会轮动到哪？""我这笔操作对不对，怎么补救？"填代码点按钮的
+  流水线回答不了这些。
+- **多 agent 辩论制造分析歧义**。让 bullish 和 bearish agent 来回吵架，
+  看似"全面"，实则产出大量互相矛盾的中间观点，最后的结论是被辩论动态
+  （而非证据权重）塑造的——同一只股票跑两次，谁吵赢了结论就倒向谁。
+  交易要的是**可归因的判断**，不是热闹的讨论。
 
-```bash
-conda activate dromx
-conda run --no-capture-output -n tradingagents uvicorn webapp.backend.main:app --port 8077 --log-level info --reload
+DromX 的做法是**分工取证 + 单点裁决**：
+
+```
+5 个分析师并行取证（各写各的证据，互不辩论）
+  → 信号聚合器做确定性加权（谁的历史胜率高谁权重大，算法说了算）
+  → 事件冲击 / 深度控制做结构化路由
+  → 研究经理 / 风险共识 / 组合经理单点裁决（每一步有明确输入输出和责任人）
 ```
 
-## Config (`.env`)
+没有吵架环节，没有中间态歧义——每一步的结论都能追溯到是哪份证据、
+哪个角色、按什么权重得出的。
 
-- `DEEPSEEK_API_KEY` / `SERPER_API_KEY`(serper.dev google 搜)
-- `DROMX_OUTPUT_LANGUAGE=中文`
-- `DROMX_LLM_PROVIDER` / `DROMX_DEEP_THINK_LLM`
+在此之上，架构是 **「投研助手 + 工具箱」**：一个理解你问题、自己规划工具的
+agent，配深度分析、板块数据、持仓复盘、财经日历、联网核实这一整箱工具。
+你随便问，它自己想办法回答。
 
-## Architecture
+## 长什么样
 
-LangGraph + agent loop + skills(21 内置)。Python 包名 `dromx`(import),项目名 DromX。
+<div align="center">
+  <img src="docs/images/assistant.png" alt="投研助手：多轮对话 + 工具调用可见" width="860" />
+  <p><i>投研助手：随便问，工具调用过程可见，随时可停</i></p>
+</div>
+
+```
+你：存储板块见底了吗？
+
+助手：🔧 查询板块行情  🔧 查询板块新闻  🔧 计算技术指标
+
+     存储板块分析报告（近 60 日）
+     ├─ 板块平均 +8.0%，今日单日 -10.02%（8 只成分股全线下跌）
+     ├─ 涨跌宽度 0%（极端弱势）
+     ├─ 关键判断：尚未确认见底，但已进入恐慌赶底阶段
+     └─ 建议：等待右侧信号（缩量企稳 + 宽度回升至 30%），现在抄底如同接飞刀
+
+你：那资金会轮动到哪里？   ← 多轮对话，上下文不断片
+
+你：我 1680 卖的 600519，卖飞了吗？
+助手：🔧 复盘我的操作  →  卖出至今 +3.2%，期间最大浮盈 +8.7%……
+```
+
+<div align="center">
+  <img src="docs/images/market.png" alt="大盘工作台：日K/分时 + 自选" width="860" />
+  <p><i>大盘工作台：日 K / 当日分时，A股港股国内直连实时刷新</i></p>
+</div>
+
+**需要对单只股票下重注时，发起 19 节点深度投研：**
+
+```
+输入 000660.KS → 19 个 AI 角色并行/接力工作 8-15 分钟
+→ 评级 + 概率情景（牛/基准/熊）+ Kelly 仓位建议 + 证伪条件
+→ 「什么情况下我是错的」白纸黑字写进报告
+```
+
+## 核心能力
+
+**🧠 投研助手（对话式）**
+- 多轮对话 + 短期记忆，追问不断片；页面刷新也不丢
+- LLM 意图识别：板块/资金/个股/复盘/回测，自动规划工具链
+- 真流式输出，工具调用可见；随时一键停止（深度分析按节点中止，不烧钱）
+- 不凭记忆瞎说：涉及代码、上市地、最新事件，先联网核实再回答
+
+**🔬 深度分析（19 节点多智能体）**
+- 5 分析师并行取证（技术/情绪/新闻/基本面/产业）→ 信号确定性加权 → 单点裁决，**不搞多 agent 辩论**，结论可归因、可复现
+- Orchestrator 按标的和行情状态动态规划，不是固定模板
+- 21 个方法论 skill（均线猎手、机构资金流、半导体周期、财报偏差……）按需自动挂载
+- 事件触发 Re-Analysis：突发消息改变前提时，相关分析师自动重审结论
+- 产出带概率、Kelly 仓位、证伪条件的结构化决策，可导出 PDF
+
+**📈 大盘工作台**
+- 日 K / 当日分时自由切换，MA 叠加，自选 + 搜索 + 10s/30s/1min 刷新
+- A股走通达信 TCP 直连、港股走腾讯，国内网络零配置实时看
+
+**🌐 数据与模型**
+- 金十 7x24 快讯 + 财经日历（非农/CPI/央行决议）+ 黄金原油外汇全球指数行情
+- 东方财富 / 新浪 / FRED / Polymarket / StockTwits / Reddit / serper 搜索
+- 每个数据源都有降级链 + 熔断：一路挂了自动切备用，不卡死
+- LLM 随便换：DeepSeek / OpenAI / Anthropic / Gemini / Kimi / 通义 / 智谱 / Ollama 本地
+
+## 快速开始
+
+```bash
+# 后端（Python 3.10+）
+pip install -r requirements.txt
+uvicorn webapp.backend.main:app --port 8077 --reload
+
+# 前端（另开终端）
+cd webapp/frontend && npm install && npm run dev
+```
+
+打开 http://localhost:5173 → **应用配置** 页填入任意一家模型密钥（推荐 DeepSeek，便宜好用）
+→ 去「投研助手」问一句："存储板块见底了吗？"
+
+> 配置不用碰 `.env`：页面填的密钥优先级更高，`.env` 只是保底。
+> 涨跌配色支持一键切换（红涨绿跌 / 绿涨红跌），国内外习惯都照顾。
+
+## 实验功能（可能大改）
+
+⚠️ 选股、监控中心、多标的对比、绩效归因、跨品种对冲、策略回测——
+能用，但接口和交互在快速迭代中，别依赖它们的稳定性。
+
+## 架构（简版）
+
+```
+React 前端 ──SSE──> FastAPI 后端 ──> dromx 核心包
+                                        ├─ assistant/  投研助手（意图识别 + ReAct + 记忆 + 取消）
+                                        ├─ agents/     19 节点多智能体角色
+                                        ├─ graph/      LangGraph 流水线（并行优化）
+                                        ├─ tools/      统一工具注册表（板块/数据/分析/联网）
+                                        ├─ skills/     21 个可插拔方法论
+                                        └─ dataflows/  数据源路由（降级链 + 熔断）
+```
+
+CLI 党也可以直接 `python main.py` 跑终端版。
+
+## 开发
+
+```bash
+python -m pytest tests/ -q          # 690+ 测试
+cd webapp/frontend && npm run build # 前端构建
+```
 
 ## License
 
-私有项目(基于开源 DromX 架构重构)。
+[MIT](LICENSE)
