@@ -73,6 +73,9 @@ _NUMERIC = {"close", "change_pct", "volume", "amount", "turnover_rate",
             "pe", "vol_ratio", "market_cap", "change_60d"}
 
 _SESSION = requests.Session()
+# 强制直连：macOS 系统代理/VPN 访问 push2.eastmoney.com 会被直接断连
+# (RemoteDisconnected)，导致全市场快照返回 0 只、选股全空
+_SESSION.trust_env = False
 _SESSION.headers.update({
     "User-Agent": _UA,
     # Eastmoney sometimes drops connections for requests without a Referer.
@@ -122,12 +125,44 @@ def _parse_diff(diff) -> list[dict]:
     return []
 
 
+def _fetch_page_curl(url: str, params: dict) -> dict | None:
+    """Fallback: 用系统 curl 拉一页（macOS SecureTransport 指纹过 WAF）。
+
+    东财 push2 的 WAF 按 TLS 指纹拦截 OpenSSL 系客户端（requests/urllib3/
+    curl_cffi 全部 RemoteDisconnected），但放行 macOS 系统 curl。仅在
+    requests 失败时兜底；无 curl 或失败返回 None。
+    """
+    import json
+    import shutil
+    import subprocess
+    import urllib.parse
+
+    if not shutil.which("curl"):
+        return None
+    qs = urllib.parse.urlencode(params)
+    try:
+        out = subprocess.run(
+            [
+                "curl", "-sS", "-m", str(_TIMEOUT),
+                "-H", f"User-Agent: {_UA}",
+                "-H", "Referer: https://quote.eastmoney.com/",
+                f"{url}?{qs}",
+            ],
+            capture_output=True, text=True, check=False,
+        )
+        if out.returncode != 0 or not out.stdout.strip():
+            return None
+        return json.loads(out.stdout)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _fetch_page(params: dict) -> dict | None:
     """Fetch one clist page with retry/backoff. None if all attempts fail.
 
     Eastmoney intermittently drops connections (RemoteDisconnected) under
     repeated access; a couple of retries turns a transient blip into success
-    instead of an empty universe.
+    instead of an empty universe. requests 全部失败时兜底系统 curl（TLS 指纹）。
     """
     for attempt in range(1, _PAGE_RETRIES + 1):
         try:
@@ -140,8 +175,11 @@ def _fetch_page(params: dict) -> dict | None:
                 continue
             logger.warning("universe snapshot page fetch failed after %d tries: %s",
                            _PAGE_RETRIES, e)
-            return None
-    return None
+    # requests 全部失败 → 系统 curl 兜底（push2 WAF 按 TLS 指纹拦截 Python 客户端）
+    payload = _fetch_page_curl(_CLIST_URL, params)
+    if payload is None:
+        logger.warning("universe snapshot page fetch failed (requests + curl)")
+    return payload
 
 
 def fetch_universe_snapshot(market: str) -> list[dict]:

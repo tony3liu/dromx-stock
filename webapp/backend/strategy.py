@@ -118,6 +118,13 @@ class GenerateRequest(BaseModel):
     save: bool = False             # persist to ~/.dromx/strategies/ai/ when valid
 
 
+class AIScreenRequest(BaseModel):
+    prompt: str
+    market: str = "cn"
+    as_of: str | None = None
+    review_top_n: int = 8          # AI 研判前 N 只（一次 LLM 调用，控制成本）
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -175,6 +182,113 @@ def generate_strategy(req: GenerateRequest, _: None = Depends(auth.require_auth)
         _reload_all_engines()
         result["saved_path"] = str(target)
     return result
+
+
+@router.post("/ai-screen")
+def ai_screen(req: AIScreenRequest, _: None = Depends(auth.require_auth)) -> dict:
+    """自然语言选股（P0 三层架构）：
+
+    ① LLM 意图解析 → 生成筛选策略代码（AST 安全校验，落盘 ai/ 目录可复用）
+    ② 机器全市场快筛（现有 strategy engine + 快照缓存）
+    ③ LLM 批量研判 top N：逐票输出入选逻辑 / 风险 / 观察点
+    """
+    from dromx.strategy.ai_generator import AIStrategyGenerator
+
+    prompt = (req.prompt or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=422, detail="prompt required")
+
+    llm = _qa_llm()
+
+    # ① 意图 → 策略代码
+    gen = AIStrategyGenerator(llm).generate(prompt)
+    if not gen.get("valid"):
+        raise HTTPException(status_code=422, detail=gen.get("error") or "策略生成失败，请换个描述试试")
+    meta = gen["meta"]
+    sid = meta.get("id", "")
+    if not re.fullmatch(r"ai_[A-Za-z0-9_-]+", sid):
+        raise HTTPException(status_code=400, detail=f"AI 策略 id 非法: {sid}")
+
+    # 策略落盘（同名覆盖即更新）并热加载
+    target = _USER_DIRS["ai"] / f"{sid}.py"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(gen["code"], encoding="utf-8")
+    _reload_all_engines()
+
+    # ② 机器快筛
+    eng = _get_engine(req.market)
+    if not eng.has(sid):
+        raise HTTPException(status_code=500, detail=f"策略 {sid} 加载失败（见策略列表错误信息）")
+    as_of = _parse_date(req.as_of)
+    result = eng.run(sid, as_of)
+
+    # ③ LLM 批量研判 top N（一次调用）
+    top_n = max(1, min(int(req.review_top_n), 20))
+    reviews = _review_hits(llm, prompt, meta, result.rows[:top_n], req.market)
+
+    return {
+        "prompt": prompt,
+        "strategy": {
+            "id": sid,
+            "name": meta.get("name", ""),
+            "description": meta.get("description", ""),
+        },
+        "as_of": result.as_of,
+        "market": result.market,
+        "total": result.total,
+        "elapsed_ms": result.elapsed_ms,
+        "rows": result.rows,
+        "reviews": reviews,
+    }
+
+
+def _review_hits(llm, prompt: str, meta: dict, rows: list[dict], market: str) -> dict:
+    """对命中 top N 逐票生成 AI 点评；失败返回 {}（不阻塞主结果）。"""
+    if not rows:
+        return {}
+    try:
+        lines = []
+        for r in rows:
+            lines.append(
+                f"- {r.get('symbol')} {r.get('name') or ''}: 现价{r.get('close')}, "
+                f"涨跌幅{_fmt_pct(r.get('change_pct'))}, 换手{_fmt_pct(r.get('turnover_rate'))}, "
+                f"RSI14={r.get('rsi_14')}, 量比5d={r.get('vol_ratio_5d')}, 评分={r.get('score')}"
+            )
+        table = "\n".join(lines)
+        market_cn = {"cn": "A股", "hk": "港股", "us": "美股"}.get(market, market)
+        msg = (
+            f"用户的选股意图：「{prompt}」（市场：{market_cn}）\n"
+            f"AI 生成的策略「{meta.get('name', '')}」：{meta.get('description', '')}\n\n"
+            f"按评分排序的命中标的：\n{table}\n\n"
+            "你是资深选股研究员。逐票点评（每只 2-3 句）：为什么它符合用户意图、"
+            "主要风险、一个关键观察点（价位/信号/事件）。不要编造数据，只基于给定指标和常识。\n"
+            "严格输出 JSON 数组，不要输出其他内容："
+            '[{"symbol": "代码", "comment": "点评..."}]'
+        )
+        resp = llm.invoke(msg)
+        text = getattr(resp, "content", None) or str(resp)
+        import json as _json
+
+        start = text.find("[")
+        end = text.rfind("]")
+        if start == -1 or end == -1:
+            return {}
+        items = _json.loads(text[start : end + 1])
+        return {
+            str(i.get("symbol")): str(i.get("comment", ""))
+            for i in items
+            if isinstance(i, dict) and i.get("symbol")
+        }
+    except Exception as e:  # noqa: BLE001 — 点评失败不影响筛选结果
+        logger.warning("ai_screen review failed: %s", e)
+        return {}
+
+
+def _fmt_pct(v) -> str:
+    try:
+        return f"{float(v) * 100:.2f}%"
+    except (TypeError, ValueError):
+        return "—"
 
 
 @router.delete("/{strategy_id}")

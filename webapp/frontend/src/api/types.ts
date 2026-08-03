@@ -407,3 +407,14 @@ export interface EnvSettingItem {
   preview?: string;
   value?: string;
 }
+
+export interface AIScreenResult {
+  prompt: string;
+  strategy: { id: string; name: string; description: string };
+  as_of: string;
+  market: string;
+  total: number;
+  elapsed_ms: number;
+  rows: StrategyHit[];
+  reviews: Record<string, string>;
+}
