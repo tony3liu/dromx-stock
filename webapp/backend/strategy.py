@@ -119,6 +119,26 @@ def list_strategies(market: str = "hk", _: None = Depends(auth.require_auth)) ->
     return {"market": market, "strategies": strategies, "load_errors": eng.load_errors()}
 
 
+# 注意：/history 必须声明在 /{strategy_id} 之前，否则会被路径参数吞掉
+@router.get("/history")
+def screen_history(limit: int = 20, _: None = Depends(auth.require_auth)) -> dict:
+    """选股历史（摘要，新→旧）"""
+    from dromx.strategy.screen_history import list_recent
+
+    return {"history": list_recent(max(1, min(limit, 50)))}
+
+
+@router.get("/history/{history_id}")
+def screen_history_detail(history_id: str, _: None = Depends(auth.require_auth)) -> dict:
+    """选股历史详情（含命中行与 AI 研判）"""
+    from dromx.strategy.screen_history import get
+
+    record = get(history_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="history not found")
+    return record
+
+
 @router.get("/{strategy_id}")
 def get_strategy(strategy_id: str, market: str = "hk",
                  _: None = Depends(auth.require_auth)) -> dict:

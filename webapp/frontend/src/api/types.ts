@@ -411,6 +411,7 @@ export interface EnvSettingItem {
 export interface AIScreenResult {
   prompt: string;
   feedback?: string;
+  history_id?: string;
   strategy: { id: string; name: string; description: string };
   as_of: string;
   market: string;
@@ -418,4 +419,16 @@ export interface AIScreenResult {
   elapsed_ms: number;
   rows: StrategyHit[];
   reviews: Record<string, string>;
+}
+
+export interface ScreenHistorySummary {
+  id: string;
+  ts: number;
+  prompt: string;
+  feedback?: string | null;
+  market: string;
+  as_of: string;
+  strategy_name: string;
+  strategy_id: string;
+  total: number;
 }

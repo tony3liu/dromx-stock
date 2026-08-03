@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Search, Loader2, Sparkles, RefreshCw, ChevronDown, Wand2 } from "lucide-react";
+import { Search, Loader2, Sparkles, RefreshCw, ChevronDown, Wand2, History } from "lucide-react";
 import { api } from "../api/client";
-import type { AIScreenResult, Market, StrategyHit, StrategyMeta } from "../api/types";
+import type { AIScreenResult, Market, ScreenHistorySummary, StrategyHit, StrategyMeta } from "../api/types";
 import { cn } from "../lib/format";
 
 const MARKETS: { value: Market; label: string }[] = [
@@ -40,6 +40,11 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [analyzingSym, setAnalyzingSym] = useState<string | null>(null);
 
+  // 历史记录
+  const [history, setHistory] = useState<ScreenHistorySummary[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   // 高级模式（手动策略）
   const [advanced, setAdvanced] = useState(false);
   const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
@@ -60,6 +65,32 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
     return () => { alive = false; };
   }, [advanced, market]);
 
+  const loadHistory = useCallback(() => {
+    api.screenHistory()
+      .then((r) => setHistory(r.history))
+      .catch(() => {});
+  }, []);
+
+  useEffect(loadHistory, [loadHistory]);
+
+  // 恢复一条历史记录到结果区（含命中行与 AI 研判）
+  const restoreHistory = useCallback(async (id: string) => {
+    setLoadingDetail(true);
+    setErr(null);
+    try {
+      const rec = await api.screenHistoryDetail(id);
+      setAdvanced(false);
+      setPrompt(rec.prompt);
+      setRefineChain(rec.feedback ? [rec.feedback] : []);
+      setAiResult(rec);
+      setShowHistory(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "加载历史失败");
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
+
   const aiRun = useCallback(async (p?: string) => {
     const q = (p ?? prompt).trim();
     if (!q || running) return;
@@ -71,12 +102,13 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
     try {
       const res = await api.aiScreen({ prompt: q, market });
       setAiResult(res);
+      loadHistory();  // 新结果入库后刷新历史列表
     } catch (e) {
       setErr(e instanceof Error ? e.message : "AI 选股失败");
     } finally {
       setRunning(false);
     }
-  }, [prompt, market, running]);
+  }, [prompt, market, running, loadHistory]);
 
   // P1 多轮澄清：基于当前策略按反馈修订重跑
   const refine = useCallback(async () => {
@@ -94,12 +126,13 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
       setAiResult(res);
       setRefineChain((prev) => [...prev, fb]);
       setRefineText("");
+      loadHistory();  // refine 也会入库
     } catch (e) {
       setErr(e instanceof Error ? e.message : "优化失败");
     } finally {
       setRunning(false);
     }
-  }, [refineText, aiResult, market, running]);
+  }, [refineText, aiResult, market, running, loadHistory]);
 
   const manualRun = useCallback(async () => {
     if (!selected) return;
@@ -189,6 +222,19 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
             </button>
 
             <button
+              onClick={() => setShowHistory((v) => !v)}
+              className={cn(
+                "flex items-center gap-1 rounded-[var(--radius-control)] border px-2.5 py-2 text-xs transition",
+                showHistory
+                  ? "border-[var(--color-brand)]/40 bg-[var(--color-brand-tint)] text-[var(--color-brand-dark)]"
+                  : "border-[var(--color-border)] text-[var(--color-ink-faint)] hover:bg-[var(--color-surface-2)]",
+              )}
+            >
+              <History size={13} />
+              历史{history.length > 0 && ` (${history.length})`}
+            </button>
+
+            <button
               onClick={() => setAdvanced((v) => !v)}
               className="flex items-center gap-1 rounded-[var(--radius-control)] border border-[var(--color-border)] px-2.5 py-2 text-xs text-[var(--color-ink-faint)] transition hover:bg-[var(--color-surface-2)]"
             >
@@ -250,6 +296,42 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
 
       {/* body */}
       <div className="mx-auto max-w-[1180px] px-8 py-6">
+        {/* 历史记录面板 */}
+        {showHistory && (
+          <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-border)]">
+            <div className="border-b border-[var(--color-border)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">
+              选股历史（点击恢复）
+            </div>
+            {history.length === 0 ? (
+              <div className="px-4 py-6 text-center text-xs text-[var(--color-ink-faint)]">暂无历史记录</div>
+            ) : (
+              <div className="max-h-72 divide-y divide-[var(--color-border)] overflow-y-auto">
+                {history.map((h) => (
+                  <button
+                    key={h.id}
+                    onClick={() => restoreHistory(h.id)}
+                    disabled={loadingDetail}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-[var(--color-brand-tint)]/40 disabled:opacity-60"
+                  >
+                    <span className="shrink-0 text-xs text-[var(--color-ink-faint)] tnum">
+                      {new Date(h.ts).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-ink)]">
+                      {h.prompt}
+                      {h.feedback && <span className="text-[var(--color-brand-dark)]"> → {h.feedback}</span>}
+                    </span>
+                    <span className="shrink-0 rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[10px] text-[var(--color-ink-faint)]">
+                      {{ cn: "A股", hk: "港股", us: "美股" }[h.market as string] ?? h.market}
+                    </span>
+                    <span className="shrink-0 text-xs text-[var(--color-ink-faint)]">{h.strategy_name}</span>
+                    <span className="shrink-0 text-xs font-semibold text-[var(--color-brand-dark)]">命中 {h.total}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {err && (
           <div className="mb-4 rounded-[var(--radius-panel)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-tint)] px-4 py-3 text-sm text-[var(--color-danger)]">{err}</div>
         )}

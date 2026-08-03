@@ -1,5 +1,5 @@
 // Thin REST client for the backend. All paths go through the Vite /api proxy.
-import type { AIGenerateResult, AIScreenResult, AlertEvent, BacktestEstimate, BacktestRecord, CreateRunRequest, EnvSettingItem, FactorExposure, HedgeReport, IntradaySeries, Job, Market, MonitorRule, NotifyChannels, NotifySettings, PerformanceReport, PriceSeries, RunRecord, RunSummary, SizingReport, StrategyListResponse, StrategyMeta, StrategyRunResult } from "./types";
+import type { AIGenerateResult, AIScreenResult, AlertEvent, BacktestEstimate, BacktestRecord, CreateRunRequest, EnvSettingItem, FactorExposure, HedgeReport, IntradaySeries, Job, Market, MonitorRule, NotifyChannels, NotifySettings, PerformanceReport, PriceSeries, RunRecord, RunSummary, ScreenHistorySummary, SizingReport, StrategyListResponse, StrategyMeta, StrategyRunResult } from "./types";
 import { authHeaders, notifyUnauthorized } from "../lib/auth";
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
@@ -158,6 +158,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  screenHistory: () => jsonFetch<{ history: ScreenHistorySummary[] }>("/api/strategies/history"),
+
+  screenHistoryDetail: (id: string) => jsonFetch<AIScreenResult & { id: string }>(`/api/strategies/history/${id}`),
 
   generateStrategy: (prompt: string, save = false) =>
     jsonFetch<AIGenerateResult>("/api/strategies/generate", {

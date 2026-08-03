@@ -147,6 +147,14 @@ def run_ai_screen(
     }
     if feedback:
         out["feedback"] = feedback
+
+    # 历史存档（best-effort，失败不影响主流程）
+    try:
+        from dromx.strategy.screen_history import save as _save_history
+
+        out["history_id"] = _save_history(out)
+    except Exception:  # noqa: BLE001
+        pass
     return out
 
 
