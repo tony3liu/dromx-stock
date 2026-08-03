@@ -353,6 +353,11 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
               <span className="text-xs text-[var(--color-ink-faint)]">
                 {aiResult.strategy.description} · 耗时 {(aiResult.elapsed_ms / 1000).toFixed(1)}s
               </span>
+              {aiResult.relaxed && (
+                <span className="rounded bg-[var(--color-warn-tint)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-warn)]">
+                  条件过严，已自动放宽
+                </span>
+              )}
             </div>
             {/* 多轮澄清链 */}
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">

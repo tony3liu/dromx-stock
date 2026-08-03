@@ -197,6 +197,7 @@ def fetch_universe_snapshot(market: str) -> list[dict]:
         return []
 
     rows: list[dict] = []
+    consecutive_failures = 0
     for page in range(1, _MAX_PAGES + 1):
         params = {
             "pn": page, "pz": _PAGE_SIZE, "po": 1, "np": 1,
@@ -204,7 +205,16 @@ def fetch_universe_snapshot(market: str) -> list[dict]:
         }
         payload = _fetch_page(params)
         if payload is None:
-            break
+            # 页级容错：东财/WAF 间歇断连是常态，跳过失败页继续拉，
+            # 连续 3 页失败才放弃 —— 避免第一页抖动就整锅端（0 names）
+            consecutive_failures += 1
+            if consecutive_failures >= 3:
+                logger.warning("universe snapshot %s: %d consecutive page failures, stopping at page %d",
+                               market, consecutive_failures, page)
+                break
+            time.sleep(0.5)
+            continue
+        consecutive_failures = 0
 
         data = (payload or {}).get("data") or {}
         diff = _parse_diff(data.get("diff"))

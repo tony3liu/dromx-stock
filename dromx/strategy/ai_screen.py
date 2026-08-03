@@ -53,9 +53,10 @@ def get_engine(market: str) -> StrategyEngine:
     with _lock:
         if market not in _engines:
             def loader(as_of: date) -> pl.DataFrame:
-                # 默认预筛：只保留当日有波动的标的，控制指标计算量
+                # 默认预筛：保留当日有明显波动的标的（|涨跌|>1%），控制指标计算量。
+                # 2% 会误杀缩量盘整中的趋势股（右侧买点常常不在大阳线当天）。
                 return _adapter.load_universe(
-                    market, as_of, prefilter=pl.col("change_pct").abs() > 0.02
+                    market, as_of, prefilter=pl.col("change_pct").abs() > 0.01
                 )
 
             _engines[market] = StrategyEngine(loader, _strategy_dirs(), market=market)
@@ -127,6 +128,31 @@ def run_ai_screen(
         raise ValueError(f"策略 {sid} 加载失败（语法或门控问题）")
     result = eng.run(sid, as_of)
 
+    # 0 命中 → 自动放宽一轮（保留核心逻辑，放宽非核心阈值后重跑）
+    relaxed = False
+    if result.total == 0:
+        relax_feedback = (
+            "上一轮筛选 0 命中，说明条件过严。请保留核心逻辑，放宽非核心阈值："
+            "如把『接近新高』从 2% 放宽到 5-8%、降低量比/换手门槛、把非关键过滤"
+            "改为 scoring 排序项。目标是在当前市场环境命中 5-30 只。"
+        )
+        gen2 = AIStrategyGenerator(llm).generate(
+            prompt, base_code=gen["code"], feedback=relax_feedback,
+        )
+        if gen2.get("valid"):
+            meta = gen2["meta"]
+            sid2 = meta.get("id", sid)
+            if re.fullmatch(r"ai_[A-Za-z0-9_-]+", sid2):
+                sid = sid2
+                (AI_STRATEGY_DIR / f"{sid}.py").write_text(gen2["code"], encoding="utf-8")
+                reload_engines()
+                eng = get_engine(market)
+                if eng.has(sid):
+                    result2 = eng.run(sid, as_of)
+                    if result2.total > 0:
+                        result = result2
+                        relaxed = True
+
     # ③ LLM 批量研判
     top_n = max(1, min(int(review_top_n), 20))
     reviews = review_hits(llm, prompt, meta, result.rows[:top_n], market, feedback=feedback)
@@ -147,6 +173,8 @@ def run_ai_screen(
     }
     if feedback:
         out["feedback"] = feedback
+    if relaxed:
+        out["relaxed"] = True
 
     # 历史存档（best-effort，失败不影响主流程）
     try:

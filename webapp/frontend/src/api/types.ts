@@ -412,6 +412,7 @@ export interface AIScreenResult {
   prompt: string;
   feedback?: string;
   history_id?: string;
+  relaxed?: boolean;
   strategy: { id: string; name: string; description: string };
   as_of: string;
   market: string;

@@ -125,7 +125,16 @@ class DataAdapter:
 
         snapshot = fetch_universe_snapshot(market)
         if not snapshot:
-            logger.warning("empty universe snapshot for %s", market)
+            # 快照源全挂（东财 WAF 间歇封锁）→ 回落最近一天的缓存宇宙。
+            # 陈旧一天的候选池对选股远好于"0 只全空"。
+            stale = self._read_latest_cache(market)
+            if stale is not None:
+                logger.warning(
+                    "universe snapshot for %s unavailable; falling back to latest cached universe",
+                    market,
+                )
+                return stale
+            logger.warning("empty universe snapshot for %s (no cache fallback)", market)
             return pl.DataFrame()
 
         snap_df = pl.DataFrame(snapshot)
@@ -328,9 +337,33 @@ class DataAdapter:
     # Cache
     # ------------------------------------------------------------------
 
+    # 缓存版本号：预筛口径或指标计算逻辑变更时 +1，旧缓存自动失效
+    # （v2: 预筛从 |涨跌|>2% 放宽到 >1%，避免误杀盘整中的趋势股）
+    _CACHE_VERSION = "v2"
+
     def _cache_path(self, market: str, as_of: date) -> Path:
         as_of_str = as_of.isoformat() if isinstance(as_of, date) else str(as_of)
-        return _CACHE_DIR / f"{market}_{as_of_str}.parquet"
+        return _CACHE_DIR / f"{market}_{as_of_str}_{self._CACHE_VERSION}.parquet"
+
+    def _read_latest_cache(self, market: str) -> pl.DataFrame | None:
+        """读取该市场最新一天的缓存宇宙（快照源全挂时的兜底）"""
+        try:
+            candidates = sorted(
+                _CACHE_DIR.glob(f"{market}_*.parquet"),
+                key=lambda p: p.name,
+                reverse=True,
+            )
+            for path in candidates:
+                try:
+                    df = pl.read_parquet(path)
+                    if not df.is_empty():
+                        logger.info("universe fallback: using cached %s (%d rows)", path.name, df.height)
+                        return df
+                except Exception:  # noqa: BLE001 — 损坏的缓存文件跳过
+                    continue
+        except Exception:  # noqa: BLE001
+            pass
+        return None
 
     def _read_cache(self, market: str, as_of: date) -> pl.DataFrame | None:
         if not self._use_cache:
