@@ -68,11 +68,15 @@ class AIStrategyGenerator:
                 logger.warning("strategy guide not found at %s", GUIDE_PATH)
         return self._guide_cache
 
-    def generate(self, user_prompt: str) -> dict:
-        """Return ``{code, meta, valid, error}``. Never raises on bad output."""
+    def generate(self, user_prompt: str, base_code: str | None = None,
+                 feedback: str | None = None) -> dict:
+        """Return ``{code, meta, valid, error}``. Never raises on bad output.
+
+        base_code + feedback: 多轮澄清模式 —— 基于已有策略代码按反馈修订。
+        """
         guide = self._get_guide()
         try:
-            code = self._call_llm(user_prompt, guide)
+            code = self._call_llm(user_prompt, guide, base_code=base_code, feedback=feedback)
         except Exception as e:  # noqa: BLE001 — surface LLM errors as a result
             return {"code": "", "meta": {}, "valid": False, "error": f"LLM 调用失败: {e}"}
 
@@ -91,10 +95,25 @@ class AIStrategyGenerator:
 
         return {"code": code, "meta": meta, "valid": True, "error": None}
 
-    def _call_llm(self, user_prompt: str, guide: str) -> str:
+    def _call_llm(self, user_prompt: str, guide: str,
+                  base_code: str | None = None, feedback: str | None = None) -> str:
+        system = _SYSTEM_PREFIX + guide
+        if base_code and feedback:
+            system += (
+                "\n\n--- 多轮修订模式 ---\n"
+                "用户已在用一版 AI 策略。基于给出的现有代码，按用户反馈修订，"
+                "输出修订后的完整策略文件（保持 META[\"id\"] 不变，只改该改的部分）。"
+            )
+            user = (
+                f"原始选股意图：{user_prompt}\n\n"
+                f"现有策略代码：\n```python\n{base_code}\n```\n\n"
+                f"用户反馈/补充要求：{feedback}"
+            )
+        else:
+            user = user_prompt
         messages = [
-            {"role": "system", "content": _SYSTEM_PREFIX + guide},
-            {"role": "user", "content": user_prompt},
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
         ]
         response = self._llm.invoke(messages)
         content = response.content if hasattr(response, "content") else str(response)

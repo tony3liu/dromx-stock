@@ -153,7 +153,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  aiScreen: (body: { prompt: string; market: Market; as_of?: string | null; review_top_n?: number }) =>
+  aiScreen: (body: { prompt: string; market: Market; as_of?: string | null; review_top_n?: number; refine_from?: string | null; feedback?: string | null }) =>
     jsonFetch<AIScreenResult>("/api/strategies/ai-screen", {
       method: "POST",
       body: JSON.stringify(body),

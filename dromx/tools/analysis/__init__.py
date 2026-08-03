@@ -71,21 +71,58 @@ def _run_backtest(args: dict, llm=None, config=None) -> str:
 
 
 def _run_screener(args: dict, llm=None, config=None) -> str:
-    """运行选股策略"""
-    strategy_id = args.get("strategy_id", "")
+    """智能选股（自然语言 → 策略生成 → 全市场快筛 → AI 研判）"""
+    prompt = (args.get("prompt") or "").strip()
     market = args.get("market", "cn")
-    as_of = args.get("as_of")
-
-    if not strategy_id:
-        return tool_error("Missing required param: strategy_id")
+    review_top_n = int(args.get("review_top_n", 5))
 
     try:
-        from webapp.backend.strategy import run_strategy
+        from dromx.strategy.ai_screen import run_ai_screen
 
-        result = run_strategy(strategy_id, market, as_of)
-        return tool_result({"data": result})
+        if prompt:
+            if llm is None:
+                return tool_error("run_screener 需要 LLM（prompt 模式）")
+            result = run_ai_screen(
+                llm=llm, prompt=prompt, market=market, review_top_n=review_top_n,
+            )
+        else:
+            # 兼容模式：直接按已有策略 id 跑
+            strategy_id = args.get("strategy_id", "")
+            if not strategy_id:
+                return tool_error("Missing required param: prompt（或 strategy_id）")
+            from webapp.backend.strategy import _get_engine
+            from datetime import date as _date
+
+            eng = _get_engine(market)
+            if not eng.has(strategy_id):
+                return tool_error(f"策略 {strategy_id} 在 {market} 市场不可用")
+            r = eng.run(strategy_id, _date.today())
+            result = {
+                "strategy": {"id": strategy_id},
+                "total": r.total,
+                "rows": r.rows,
+                "reviews": {},
+            }
     except Exception as e:
         return tool_error(f"Screener failed: {e}")
+
+    # 压缩返回给 LLM 的体积：只保留 top 10 关键字段
+    compact = []
+    for row in (result.get("rows") or [])[:10]:
+        compact.append({
+            "symbol": row.get("symbol"),
+            "name": row.get("name"),
+            "close": row.get("close"),
+            "change_pct": row.get("change_pct"),
+            "score": row.get("score"),
+            "ai_comment": (result.get("reviews") or {}).get(row.get("symbol")),
+        })
+    return tool_result({
+        "strategy": result.get("strategy"),
+        "market": result.get("market", market),
+        "total": result.get("total", 0),
+        "top_hits": compact,
+    })
 
 
 def _run_hedge_analysis(args: dict, llm=None, config=None) -> str:
@@ -176,19 +213,19 @@ registry.register(
     name="run_screener",
     toolset="analysis",
     schema={
-        "description": "运行选股策略。当用户需要『筛选股票』或『找股票』时调用。",
+        "description": "智能选股：用自然语言描述选股需求（如『存储板块缩量企稳的票』），AI 生成筛选策略并全市场快筛，返回命中标的和逐票研判。当用户想『找股票/选股/筛选』时调用。",
         "parameters": {
             "type": "object",
             "properties": {
-                "strategy_id": {"type": "string", "description": "策略 ID"},
-                "market": {"type": "string", "description": "市场：hk/us/cn，默认 cn"},
-                "as_of": {"type": "string", "description": "截止日期，yyyy-mm-dd"},
+                "prompt": {"type": "string", "description": "自然语言选股需求，如『近期放量突破的强势股』"},
+                "market": {"type": "string", "description": "市场：cn/hk/us，默认 cn"},
+                "review_top_n": {"type": "integer", "description": "AI 研判前 N 只，默认 5"},
+                "strategy_id": {"type": "string", "description": "（可选）直接按已有策略 id 跑，跳过 prompt"},
             },
-            "required": ["strategy_id"],
         },
     },
     handler=_run_screener,
-    description="运行选股策略",
+    description="智能选股（自然语言→策略→快筛→研判）",
 )
 
 registry.register(

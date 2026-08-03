@@ -34,6 +34,8 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
   const [market, setMarket] = useState<Market>("cn");
   const [prompt, setPrompt] = useState("");
   const [aiResult, setAiResult] = useState<AIScreenResult | null>(null);
+  const [refineText, setRefineText] = useState("");
+  const [refineChain, setRefineChain] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [analyzingSym, setAnalyzingSym] = useState<string | null>(null);
@@ -65,6 +67,7 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
     setRunning(true);
     setErr(null);
     setAiResult(null);
+    setRefineChain([]);
     try {
       const res = await api.aiScreen({ prompt: q, market });
       setAiResult(res);
@@ -74,6 +77,29 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
       setRunning(false);
     }
   }, [prompt, market, running]);
+
+  // P1 多轮澄清：基于当前策略按反馈修订重跑
+  const refine = useCallback(async () => {
+    const fb = refineText.trim();
+    if (!fb || !aiResult || running) return;
+    setRunning(true);
+    setErr(null);
+    try {
+      const res = await api.aiScreen({
+        prompt: aiResult.prompt,
+        market,
+        refine_from: aiResult.strategy.id,
+        feedback: fb,
+      });
+      setAiResult(res);
+      setRefineChain((prev) => [...prev, fb]);
+      setRefineText("");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "优化失败");
+    } finally {
+      setRunning(false);
+    }
+  }, [refineText, aiResult, market, running]);
 
   const manualRun = useCallback(async () => {
     if (!selected) return;
@@ -236,14 +262,46 @@ export function Screener({ onStarted }: { onStarted: (id: string) => void }) {
         )}
 
         {aiResult && !advanced && (
-          <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-sm font-semibold text-[var(--color-ink)]">
-              {aiResult.strategy.name || "AI 策略"}
-              <span className="ml-2 font-normal text-[var(--color-brand-dark)]">命中 {aiResult.total} 只</span>
-            </span>
-            <span className="text-xs text-[var(--color-ink-faint)]">
-              {aiResult.strategy.description} · 耗时 {(aiResult.elapsed_ms / 1000).toFixed(1)}s
-            </span>
+          <div className="mb-3">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-sm font-semibold text-[var(--color-ink)]">
+                {aiResult.strategy.name || "AI 策略"}
+                <span className="ml-2 font-normal text-[var(--color-brand-dark)]">命中 {aiResult.total} 只</span>
+              </span>
+              <span className="text-xs text-[var(--color-ink-faint)]">
+                {aiResult.strategy.description} · 耗时 {(aiResult.elapsed_ms / 1000).toFixed(1)}s
+              </span>
+            </div>
+            {/* 多轮澄清链 */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-[var(--color-ink-faint)]">意图：</span>
+              <span className="rounded bg-[var(--color-surface-2)] px-2 py-0.5 text-[var(--color-ink-soft)]">{aiResult.prompt}</span>
+              {refineChain.map((fb, i) => (
+                <span key={i} className="flex items-center gap-1.5">
+                  <span className="text-[var(--color-ink-faint)]">→</span>
+                  <span className="rounded bg-[var(--color-brand-tint)] px-2 py-0.5 text-[var(--color-brand-dark)]">{fb}</span>
+                </span>
+              ))}
+            </div>
+            {/* 继续优化输入 */}
+            <div className="mt-2.5 flex items-center gap-2">
+              <input
+                value={refineText}
+                onChange={(e) => setRefineText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && refine()}
+                placeholder="继续优化，如：更看重位置低的 / 去掉 ST 股 / 量比阈值再高点"
+                disabled={running}
+                className="max-w-[520px] flex-1 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs text-[var(--color-ink)] outline-none transition placeholder:text-[var(--color-ink-faint)] focus:border-[var(--color-brand)] disabled:opacity-60"
+              />
+              <button
+                onClick={refine}
+                disabled={running || !refineText.trim()}
+                className="flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand)] transition hover:bg-[var(--color-brand-tint)] disabled:opacity-50"
+              >
+                {running ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                优化
+              </button>
+            </div>
           </div>
         )}
 

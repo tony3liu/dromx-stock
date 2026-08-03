@@ -24,56 +24,33 @@ import polars as pl
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from dromx.strategy.ai_screen import (
+    AI_STRATEGY_DIR,
+    get_engine as _get_engine_core,
+    reload_engines,
+)
 from dromx.strategy.data_adapter import DataAdapter
 from dromx.strategy.engine import StrategyEngine
 from webapp.backend import auth
 
 logger = logging.getLogger("dromx.web.strategy")
 
-_BUILTIN_DIR = Path(__file__).resolve().parents[2] / "dromx" / "strategy" / "builtin"
-_USER_DIRS = {
-    "custom": Path.home() / ".dromx" / "strategies" / "custom",
-    "ai": Path.home() / ".dromx" / "strategies" / "ai",
-}
+# 引擎缓存统一在 dromx.strategy.ai_screen（投研助手工具与 web 端点共用）
 _MARKETS = ("hk", "us", "cn")
-
-# Per-market engine cache (built lazily). Each engine loads builtin + user dirs
-# and is gated to strategies that apply to that market.
-_engines: dict[str, StrategyEngine] = {}
-_adapter = DataAdapter()
-
-
-def _strategy_dirs() -> list[Path]:
-    for d in _USER_DIRS.values():
-        d.mkdir(parents=True, exist_ok=True)
-    return [_BUILTIN_DIR, *_USER_DIRS.values()]
 
 
 def _get_engine(market: str) -> StrategyEngine:
     market = (market or "hk").lower()
     if market not in _MARKETS:
         raise HTTPException(status_code=400, detail=f"未知市场: {market} (支持 hk/us/cn)")
-    if market not in _engines:
-        loader = _make_loader(market)
-        _engines[market] = StrategyEngine(loader, _strategy_dirs(), market=market)
-    return _engines[market]
-
-
-def _make_loader(market: str):
-    """Build the enriched-frame loader for a market (DataAdapter.load_universe)."""
-    def loader(as_of: date) -> pl.DataFrame:
-        # Generic default prefilter: only names that actually moved today, so the
-        # expensive stage-2 indicator compute stays bounded. Strategies still get
-        # the full computed frame for the shortlisted candidates.
-        return _adapter.load_universe(
-            market, as_of, prefilter=pl.col("change_pct").abs() > 0.02
-        )
-    return loader
+    try:
+        return _get_engine_core(market)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 def _reload_all_engines() -> None:
-    for eng in _engines.values():
-        eng.reload()
+    reload_engines()
 
 
 # ---------------------------------------------------------------------------
@@ -123,6 +100,8 @@ class AIScreenRequest(BaseModel):
     market: str = "cn"
     as_of: str | None = None
     review_top_n: int = 8          # AI 研判前 N 只（一次 LLM 调用，控制成本）
+    refine_from: str | None = None  # 多轮澄清：基于此 AI 策略 id 修订
+    feedback: str | None = None     # 多轮澄清：用户补充要求
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +154,7 @@ def generate_strategy(req: GenerateRequest, _: None = Depends(auth.require_auth)
         sid = (result.get("meta") or {}).get("id", "")
         if not re.fullmatch(r"ai_[A-Za-z0-9_-]+", sid):
             raise HTTPException(status_code=400, detail="AI 策略 id 必须形如 ai_xxx（字母/数字/下划线/短横线）")
-        path = _USER_DIRS["ai"]
+        path = AI_STRATEGY_DIR
         path.mkdir(parents=True, exist_ok=True)
         target = path / f"{sid}.py"
         target.write_text(result["code"], encoding="utf-8")
@@ -186,109 +165,29 @@ def generate_strategy(req: GenerateRequest, _: None = Depends(auth.require_auth)
 
 @router.post("/ai-screen")
 def ai_screen(req: AIScreenRequest, _: None = Depends(auth.require_auth)) -> dict:
-    """自然语言选股（P0 三层架构）：
+    """自然语言选股（三层架构 + P1 多轮澄清）：
 
-    ① LLM 意图解析 → 生成筛选策略代码（AST 安全校验，落盘 ai/ 目录可复用）
-    ② 机器全市场快筛（现有 strategy engine + 快照缓存）
+    ① LLM 意图解析 → 生成筛选策略代码（AST 安全校验，落盘可复用）
+    ② 机器全市场快筛（strategy engine + 快照缓存）
     ③ LLM 批量研判 top N：逐票输出入选逻辑 / 风险 / 观察点
+
+    多轮澄清：传 refine_from（已有 AI 策略 id）+ feedback（补充要求），
+    LLM 会基于原策略修订后重跑。
     """
-    from dromx.strategy.ai_generator import AIStrategyGenerator
+    from dromx.strategy.ai_screen import run_ai_screen
 
-    prompt = (req.prompt or "").strip()
-    if not prompt:
-        raise HTTPException(status_code=422, detail="prompt required")
-
-    llm = _qa_llm()
-
-    # ① 意图 → 策略代码
-    gen = AIStrategyGenerator(llm).generate(prompt)
-    if not gen.get("valid"):
-        raise HTTPException(status_code=422, detail=gen.get("error") or "策略生成失败，请换个描述试试")
-    meta = gen["meta"]
-    sid = meta.get("id", "")
-    if not re.fullmatch(r"ai_[A-Za-z0-9_-]+", sid):
-        raise HTTPException(status_code=400, detail=f"AI 策略 id 非法: {sid}")
-
-    # 策略落盘（同名覆盖即更新）并热加载
-    target = _USER_DIRS["ai"] / f"{sid}.py"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(gen["code"], encoding="utf-8")
-    _reload_all_engines()
-
-    # ② 机器快筛
-    eng = _get_engine(req.market)
-    if not eng.has(sid):
-        raise HTTPException(status_code=500, detail=f"策略 {sid} 加载失败（见策略列表错误信息）")
-    as_of = _parse_date(req.as_of)
-    result = eng.run(sid, as_of)
-
-    # ③ LLM 批量研判 top N（一次调用）
-    top_n = max(1, min(int(req.review_top_n), 20))
-    reviews = _review_hits(llm, prompt, meta, result.rows[:top_n], req.market)
-
-    return {
-        "prompt": prompt,
-        "strategy": {
-            "id": sid,
-            "name": meta.get("name", ""),
-            "description": meta.get("description", ""),
-        },
-        "as_of": result.as_of,
-        "market": result.market,
-        "total": result.total,
-        "elapsed_ms": result.elapsed_ms,
-        "rows": result.rows,
-        "reviews": reviews,
-    }
-
-
-def _review_hits(llm, prompt: str, meta: dict, rows: list[dict], market: str) -> dict:
-    """对命中 top N 逐票生成 AI 点评；失败返回 {}（不阻塞主结果）。"""
-    if not rows:
-        return {}
     try:
-        lines = []
-        for r in rows:
-            lines.append(
-                f"- {r.get('symbol')} {r.get('name') or ''}: 现价{r.get('close')}, "
-                f"涨跌幅{_fmt_pct(r.get('change_pct'))}, 换手{_fmt_pct(r.get('turnover_rate'))}, "
-                f"RSI14={r.get('rsi_14')}, 量比5d={r.get('vol_ratio_5d')}, 评分={r.get('score')}"
-            )
-        table = "\n".join(lines)
-        market_cn = {"cn": "A股", "hk": "港股", "us": "美股"}.get(market, market)
-        msg = (
-            f"用户的选股意图：「{prompt}」（市场：{market_cn}）\n"
-            f"AI 生成的策略「{meta.get('name', '')}」：{meta.get('description', '')}\n\n"
-            f"按评分排序的命中标的：\n{table}\n\n"
-            "你是资深选股研究员。逐票点评（每只 2-3 句）：为什么它符合用户意图、"
-            "主要风险、一个关键观察点（价位/信号/事件）。不要编造数据，只基于给定指标和常识。\n"
-            "严格输出 JSON 数组，不要输出其他内容："
-            '[{"symbol": "代码", "comment": "点评..."}]'
+        return run_ai_screen(
+            llm=_qa_llm(),
+            prompt=req.prompt,
+            market=req.market,
+            as_of=_parse_date(req.as_of),
+            review_top_n=req.review_top_n,
+            refine_from=req.refine_from,
+            feedback=req.feedback,
         )
-        resp = llm.invoke(msg)
-        text = getattr(resp, "content", None) or str(resp)
-        import json as _json
-
-        start = text.find("[")
-        end = text.rfind("]")
-        if start == -1 or end == -1:
-            return {}
-        items = _json.loads(text[start : end + 1])
-        return {
-            str(i.get("symbol")): str(i.get("comment", ""))
-            for i in items
-            if isinstance(i, dict) and i.get("symbol")
-        }
-    except Exception as e:  # noqa: BLE001 — 点评失败不影响筛选结果
-        logger.warning("ai_screen review failed: %s", e)
-        return {}
-
-
-def _fmt_pct(v) -> str:
-    try:
-        return f"{float(v) * 100:.2f}%"
-    except (TypeError, ValueError):
-        return "—"
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @router.delete("/{strategy_id}")

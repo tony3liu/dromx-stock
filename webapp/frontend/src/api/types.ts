@@ -410,6 +410,7 @@ export interface EnvSettingItem {
 
 export interface AIScreenResult {
   prompt: string;
+  feedback?: string;
   strategy: { id: string; name: string; description: string };
   as_of: string;
   market: string;
