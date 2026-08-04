@@ -105,7 +105,8 @@ agent，配深度分析、板块数据、持仓复盘、财经日历、联网核
 ```bash
 # 后端（Python 3.10+）
 pip install -r requirements.txt
-uvicorn webapp.backend.main:app --port 8077 --reload
+uvicorn webapp.backend.main:app --port 8077 --reload \
+  --reload-dir dromx --reload-dir webapp/backend --reload-dir cli
 
 # 前端（另开终端）
 cd webapp/frontend && npm install && npm run dev
