@@ -9,8 +9,8 @@ import json
 import logging
 from typing import Annotated
 
-from dromx.tools.registry import registry, tool_error, tool_result
 from dromx.dataflows.interface import route_to_vendor
+from dromx.tools.registry import registry, tool_error, tool_result
 
 logger = logging.getLogger(__name__)
 
@@ -472,6 +472,243 @@ registry.register(
     description="财经日历（非农/CPI/央行决议公布时间）",
 )
 
+
+# ---------------------------------------------------------------------------
+# P0 新增：高级技术指标 / 基本面比率 / 估值模型 / 三表
+# 思路借鉴 FinceptTerminal（AGPL）的指标/估值/比率类型，代码为重新实现。
+# ---------------------------------------------------------------------------
+
+def _get_advanced_indicators(args: dict) -> str:
+    """高级技术指标（60+：ichimoku/adx/vortex/psar/kama/mfi/obv 等）"""
+    symbol = args.get("symbol", "")
+    indicators = args.get("indicators", "")
+    curr_date = args.get("curr_date", "")
+    if not symbol:
+        return tool_error("Missing required param: symbol")
+    try:
+        from dromx.dataflows.advanced_indicators import compute_advanced_indicators
+        from dromx.dataflows.stockstats_utils import load_ohlcv
+        ind_list = [i.strip() for i in indicators.split(",") if i.strip()] if indicators else None
+        ohlcv = load_ohlcv(symbol, curr_date or str(__import__("datetime").date.today()))
+        if ohlcv is None or ohlcv.empty:
+            return tool_error(f"No OHLCV data for {symbol}")
+        result = compute_advanced_indicators(ohlcv, ind_list)
+        return tool_result({"symbol": symbol, "indicators": result})
+    except Exception as e:
+        return tool_error(f"Failed to compute advanced indicators: {e}")
+
+
+def _get_fundamental_ratios(args: dict) -> str:
+    """CFA 级基本面比率（DuPont/ROE/流动性/偿债/效率）"""
+    ticker = args.get("ticker", "")
+    curr_date = args.get("curr_date", "")
+    if not ticker:
+        return tool_error("Missing required param: ticker")
+    try:
+        from dromx.dataflows.fundamental_ratios import build_fundamental_ratios
+        report = build_fundamental_ratios(ticker, curr_date or str(__import__("datetime").date.today()))
+        return tool_result({"ticker": ticker, "report": report})
+    except Exception as e:
+        return tool_error(f"Failed to build fundamental ratios: {e}")
+
+
+def _run_valuation(args: dict) -> str:
+    """估值模型（倍数法 + 可选 DCF/DDM 假设驱动）
+
+    原则：估值依赖输入假设，本工具不臆造每股指标。自动获取的是市价；
+    每股指标(eps/bvps/sps)或目标倍数由调用方提供，缺失则输出可用的部分
+    并明确提示缺少什么。"""
+    ticker = args.get("ticker", "")
+    curr_date = args.get("curr_date", "")
+    if not ticker:
+        return tool_error("Missing required param: ticker")
+    try:
+        from dromx.dataflows.stockstats_utils import load_ohlcv
+        from dromx.dataflows.valuation import (
+            MultipleValuationInputs,
+            multiple_valuation,
+            valuation_summary,
+        )
+
+        today = curr_date or str(__import__("datetime").date.today())
+        ohlcv = load_ohlcv(ticker, today)
+        if ohlcv is None or ohlcv.empty:
+            return tool_error(f"No OHLCV data for {ticker}")
+        price = float(ohlcv["Close"].iloc[-1])
+
+        m = MultipleValuationInputs(
+            eps=args.get("eps"),
+            bvps=args.get("bvps"),
+            sps=args.get("sps"),
+            ebitda_per_share=args.get("ebitda_per_share"),
+            net_debt_per_share=args.get("net_debt_per_share"),
+            pe_target=args.get("pe_target"),
+            pb_target=args.get("pb_target"),
+            ps_target=args.get("ps_target"),
+            ev_ebitda_target=args.get("ev_ebitda_target"),
+        )
+        mult = multiple_valuation(m)
+        return tool_result(valuation_summary(price, {}, mult))
+    except Exception as e:
+        return tool_error(f"Failed to run valuation: {e}")
+
+
+def _get_balance_sheet(args: dict) -> str:
+    """资产负债表（三表之一，供基本面分析）"""
+    ticker = args.get("ticker", "")
+    curr_date = args.get("curr_date", "")
+    if not ticker:
+        return tool_error("Missing required param: ticker")
+    try:
+        result = route_to_vendor("get_balance_sheet", ticker, "quarterly", curr_date or None)
+        return tool_result({"data": result})
+    except Exception as e:
+        return tool_error(f"Failed to get balance sheet: {e}")
+
+
+def _get_income_statement(args: dict) -> str:
+    """利润表（三表之一）"""
+    ticker = args.get("ticker", "")
+    curr_date = args.get("curr_date", "")
+    if not ticker:
+        return tool_error("Missing required param: ticker")
+    try:
+        result = route_to_vendor("get_income_statement", ticker, "quarterly", curr_date or None)
+        return tool_result({"data": result})
+    except Exception as e:
+        return tool_error(f"Failed to get income statement: {e}")
+
+
+def _get_cashflow(args: dict) -> str:
+    """现金流量表（三表之一）"""
+    ticker = args.get("ticker", "")
+    curr_date = args.get("curr_date", "")
+    if not ticker:
+        return tool_error("Missing required param: ticker")
+    try:
+        result = route_to_vendor("get_cashflow", ticker, "quarterly", curr_date or None)
+        return tool_result({"data": result})
+    except Exception as e:
+        return tool_error(f"Failed to get cashflow: {e}")
+
+
+registry.register(
+    name="get_advanced_indicators",
+    toolset="data",
+    schema={
+        "description": "计算高级技术指标（60+ 个）：趋势类(ichimoku/adx/vortex/psar/aroon/stc/kst/dpo/trix/mass_index)、动量类(kama/ppo/pvo/roc/tsi/awesome_oscillator/ultimate_oscillator/stoch_rsi/williams_r/cci)、波动类(atr/keltner_channel/donchian_channel/ulcer_index)、量能类(obv/adi/cmf/mfi/force_index/eom/vpt/nvi/vwap)。指标名逗号分隔；不填则全算。当用户问趋势结构、量价配合、超买超卖时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "股票代码，如 AAPL, 600519.SS"},
+                "indicators": {"type": "string", "description": "逗号分隔的指标名，如 ichimoku,adx,mfi；空=全部"},
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd，默认今天"},
+            },
+            "required": ["symbol"],
+        },
+    },
+    handler=_get_advanced_indicators,
+    description="高级技术指标（ichimoku/adx/vortex/psar/kama/obv 等 60+）",
+)
+
+registry.register(
+    name="get_fundamental_ratios",
+    toolset="data",
+    schema={
+        "description": "计算 CFA 级基本面比率：盈利能力(ROE/ROA/ROIC/毛利率/净利率/营业利润率)、DuPont 三因子五因子分解、流动性(流动/速动/现金比率)、偿债(资产负债率/D/E)、效率(资产/存货/应收周转)、现金流质量(OCF/NI、FCF)、估值倍数(PE/PB/PS)。跨 SEC/东财/新浪/腾讯自动取最近一期三表。当用户问公司财务健康、ROE 高低、财报质量时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {"type": "string", "description": "股票代码"},
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd，默认今天"},
+            },
+            "required": ["ticker"],
+        },
+    },
+    handler=_get_fundamental_ratios,
+    description="CFA 级基本面比率（DuPont/ROE/流动性/偿债/效率）",
+)
+
+registry.register(
+    name="run_valuation",
+    toolset="data",
+    schema={
+        "description": "运行估值模型（倍数法 + 可选每股指标/目标倍数）：输入股票代码与目标倍数或每股指标(eps/bvps/sps)，输出各模型内在价值估计与市价对比。工具不臆造每股指标——请先从 get_fundamentals / get_fundamental_ratios 或三表取得真实每股数据再传入。当用户问『值多少钱』『贵不贵』『合理估值』时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {"type": "string", "description": "股票代码"},
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd"},
+                "eps": {"type": "number", "description": "每股收益（可选）"},
+                "bvps": {"type": "number", "description": "每股净资产（可选）"},
+                "sps": {"type": "number", "description": "每股营收（可选）"},
+                "ebitda_per_share": {"type": "number", "description": "每股 EBITDA（可选）"},
+                "net_debt_per_share": {"type": "number", "description": "每股净债务（可选）"},
+                "pe_target": {"type": "number", "description": "目标 PE 倍数（可选）"},
+                "pb_target": {"type": "number", "description": "目标 PB 倍数（可选）"},
+                "ps_target": {"type": "number", "description": "目标 PS 倍数（可选）"},
+                "ev_ebitda_target": {"type": "number", "description": "目标 EV/EBITDA 倍数（可选）"},
+            },
+            "required": ["ticker"],
+        },
+    },
+    handler=_run_valuation,
+    description="估值模型（倍数法/DCF 框架，内在价值 vs 市价）",
+)
+
+registry.register(
+    name="get_balance_sheet",
+    toolset="data",
+    schema={
+        "description": "资产负债表（最近 6 期，跨 SEC/东财/新浪/腾讯）",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {"type": "string", "description": "股票代码"},
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd"},
+            },
+            "required": ["ticker"],
+        },
+    },
+    handler=_get_balance_sheet,
+    description="资产负债表（三表之一）",
+)
+
+registry.register(
+    name="get_income_statement",
+    toolset="data",
+    schema={
+        "description": "利润表（最近 6 期，跨 SEC/东财/新浪/腾讯）",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {"type": "string", "description": "股票代码"},
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd"},
+            },
+            "required": ["ticker"],
+        },
+    },
+    handler=_get_income_statement,
+    description="利润表（三表之一）",
+)
+
+registry.register(
+    name="get_cashflow",
+    toolset="data",
+    schema={
+        "description": "现金流量表（最近 6 期，跨 SEC/东财/新浪/腾讯）",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {"type": "string", "description": "股票代码"},
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd"},
+            },
+            "required": ["ticker"],
+        },
+    },
+    handler=_get_cashflow,
+    description="现金流量表（三表之一）",
+)
 
 # ---------------------------------------------------------------------------
 # LangChain @tool 层（供 dromx/agents 分析图 bind_tools / .func 使用）

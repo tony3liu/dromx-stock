@@ -63,7 +63,8 @@ def _normalize_cn(symbol: str) -> str:
             break
     if "." in s:
         base, _, suffix = s.rpartition(".")
-        if suffix in ("SH", "SZ", "BJ") and base.isdigit():
+        # .SH/.SZ/.BJ 之外，.SS（上证雅虎/腾讯风格后缀）也归一为 A股 6 位码
+        if suffix in ("SH", "SZ", "BJ", "SS") and base.isdigit():
             s = base
     if len(s) == 6 and s.isdigit():
         return s
