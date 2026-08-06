@@ -222,6 +222,48 @@ export interface HedgeReport {
   lookback_days: number;
 }
 
+export interface RiskVarLevel {
+  historical_pct: number | null;
+  parametric_pct: number | null;
+  historical_value: number | null;
+  parametric_value: number | null;
+}
+
+export interface RiskPerName {
+  ticker: string;
+  weight_pct: number;
+  market_value: number;
+  beta_to_book: number | null;
+  component_var_pct: number | null;
+  component_var_value: number | null;
+  notes?: string | null;
+}
+
+export interface RiskBook {
+  book_value: number;
+  n_days: number;
+  var: Record<string, RiskVarLevel>;
+  annualized_vol_pct: number | null;
+}
+
+export interface RiskStress {
+  flat_m10: number;
+  flat_m20: number;
+  crash_1d: number | null;
+  worst_day_pct: number | null;
+}
+
+export interface RiskReport {
+  verdict: string;
+  message: string;
+  book_value: number;
+  per_name: RiskPerName[];
+  book: RiskBook | null;
+  stress: RiskStress | null;
+  skipped: string[];
+  lookback_days: number;
+}
+
 export interface BacktestDay {
   date: string;
   rating: string | null;
@@ -432,4 +474,32 @@ export interface ScreenHistorySummary {
   strategy_name: string;
   strategy_id: string;
   total: number;
+}
+
+export interface OptimizePerName {
+  ticker: string;
+  weight_pct: number;
+  annual_return_pct: number;
+  annual_vol_pct: number;
+}
+
+export interface OptimizeFrontierPoint {
+  ret_pct: number;
+  vol_pct: number;
+  sharpe: number;
+}
+
+export interface OptimizeReport {
+  strategy: string;
+  weights: Record<string, number>;
+  expected_annual_return_pct: number;
+  annual_volatility_pct: number;
+  sharpe_ratio: number;
+  per_name: OptimizePerName[];
+  frontier: OptimizeFrontierPoint[];
+  skipped: string[];
+  lookback_days: number;
+  current_weights_pct?: Record<string, number>;
+  error?: string;
+  message?: string;
 }

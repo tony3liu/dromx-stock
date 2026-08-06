@@ -46,6 +46,14 @@ export const api = {
 
   hedge: () => jsonFetch<HedgeReport>("/api/hedge"),
 
+  risk: () => jsonFetch<RiskReport>("/api/risk"),
+
+  optimize: (symbols: string[], strategy: string) =>
+    jsonFetch<OptimizeReport>("/api/optimize", {
+      method: "POST",
+      body: JSON.stringify({ symbols, strategy }),
+    }),
+
   backtestEstimate: (ticker: string, start: string, end: string) =>
     jsonFetch<BacktestEstimate>(
       `/api/backtest/estimate?ticker=${encodeURIComponent(ticker)}&start_date=${start}&end_date=${end}`,

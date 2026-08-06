@@ -1,4 +1,4 @@
-import { Plus, History as HistoryIcon, GitCompareArrows, PanelLeftClose, PanelLeftOpen, Trash2, Check, X, TrendingUp, Shield, FlaskConical, Search, Bell, Settings as SettingsIcon, Bot, SlidersHorizontal } from "lucide-react";
+import { Plus, History as HistoryIcon, GitCompareArrows, PanelLeftClose, PanelLeftOpen, Trash2, Check, X, TrendingUp, Shield, FlaskConical, Search, Bell, Settings as SettingsIcon, Bot, SlidersHorizontal, ShieldAlert, GitBranch } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { RunSummary } from "../api/types";
@@ -21,6 +21,8 @@ export function Sidebar({
   onCompare,
   onPerformance,
   onHedge,
+  onRisk,
+  onOptimize,
   onBacktest,
   onScreener,
   onMonitor,
@@ -33,6 +35,8 @@ export function Sidebar({
   compareActive,
   performanceActive,
   hedgeActive,
+  riskActive,
+  optimizeActive,
   backtestActive,
   screenerActive,
   monitorActive,
@@ -50,6 +54,8 @@ export function Sidebar({
   onCompare: () => void;
   onPerformance: () => void;
   onHedge: () => void;
+  onRisk: () => void;
+  onOptimize: () => void;
   onBacktest: () => void;
   onScreener: () => void;
   onMonitor: () => void;
@@ -62,6 +68,8 @@ export function Sidebar({
   compareActive: boolean;
   performanceActive: boolean;
   hedgeActive: boolean;
+  riskActive: boolean;
+  optimizeActive: boolean;
   backtestActive: boolean;
   screenerActive: boolean;
   monitorActive: boolean;
@@ -122,6 +130,8 @@ export function Sidebar({
     },
     { key: "performance", icon: <TrendingUp size={16} />, label: "绩效归因", active: performanceActive, onClick: onPerformance, group: "工具" },
     { key: "hedge", icon: <Shield size={16} />, label: "跨品种对冲", active: hedgeActive, onClick: onHedge, group: "工具" },
+    { key: "risk", icon: <ShieldAlert size={16} />, label: "组合风险 (VaR)", active: riskActive, onClick: onRisk, group: "工具" },
+    { key: "optimize", icon: <GitBranch size={16} />, label: "组合优化", active: optimizeActive, onClick: onOptimize, group: "工具" },
     { key: "backtest", icon: <FlaskConical size={16} />, label: "策略回测", active: backtestActive, onClick: onBacktest, group: "工具" },
     { key: "settings", icon: <SettingsIcon size={16} />, label: "设置 · 通知", active: settingsActive, onClick: onSettings, group: "系统" },
     { key: "config", icon: <SlidersHorizontal size={16} />, label: "应用配置", active: configActive, onClick: onConfig, group: "系统" },

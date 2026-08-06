@@ -7,22 +7,21 @@ import yfinance as yf
 from langchain_core.messages import HumanMessage, RemoveMessage
 
 # Import tools from separate utility files
-from dromx.tools.data import get_stock_data
 from dromx.tools.data import (
     get_balance_sheet,
     get_cashflow,
+    get_fundamental_ratios,
     get_fundamentals,
-    get_income_statement,
-)
-from dromx.tools.data import get_macro_indicators
-from dromx.tools.data import get_verified_market_snapshot
-from dromx.tools.data import (
     get_global_news,
+    get_income_statement,
+    get_indicators,
     get_insider_transactions,
+    get_macro_indicators,
     get_news,
+    get_prediction_markets,
+    get_stock_data,
+    get_verified_market_snapshot,
 )
-from dromx.tools.data import get_prediction_markets
-from dromx.tools.data import get_indicators
 
 # Public surface: the data tools are imported here so agents and the graph
 # import them from one place, plus the instrument/language helpers defined below.
@@ -30,6 +29,7 @@ __all__ = [
     "get_stock_data",
     "get_indicators",
     "get_fundamentals",
+    "get_fundamental_ratios",
     "get_balance_sheet",
     "get_cashflow",
     "get_income_statement",

@@ -22,6 +22,7 @@ from dromx.core.agent_utils import (
     get_balance_sheet,
     get_cashflow,
     get_framework_note_from_state,
+    get_fundamental_ratios,
     get_fundamentals,
     get_income_statement,
     get_instrument_context_from_state,
@@ -91,15 +92,17 @@ def create_fundamentals_analyst(llm):
                 "income": lambda: _safe(lambda: get_income_statement.func(ticker, "quarterly", curr_date), "income statement"),
                 "balance": lambda: _safe(lambda: get_balance_sheet.func(ticker, "quarterly", curr_date), "balance sheet"),
                 "cashflow": lambda: _safe(lambda: get_cashflow.func(ticker, "quarterly", curr_date), "cash flow statement"),
+                "ratios": lambda: _safe(lambda: get_fundamental_ratios.func(ticker, curr_date), "fundamental ratios"),
                 "peer_block": lambda: _build_peer_block(ticker, curr_date),
             },
-            max_workers=5,
+            max_workers=6,
             label="fundamentals prefetch",
         )
         overview = blocks["overview"]
         income = blocks["income"]
         balance = blocks["balance"]
         cashflow = blocks["cashflow"]
+        ratios = blocks["ratios"]
         peer_block = blocks["peer_block"]
 
         system_message = _build_system_message(
@@ -109,8 +112,10 @@ def create_fundamentals_analyst(llm):
             income=income,
             balance=balance,
             cashflow=cashflow,
+            ratios=ratios,
             regime_context=regime_context,
             peer_block=peer_block,
+            framework_note=framework_note,
         )
 
         from dromx.dataflows.config import get_config
@@ -126,7 +131,7 @@ def create_fundamentals_analyst(llm):
             from dromx.core.agent_loop import build_analyst_loop_invoker
             report_text = build_analyst_loop_invoker(
                 llm=llm, cfg=cfg, state=state, analyst_key="fundamentals",
-                tools=[get_fundamentals, get_income_statement, get_balance_sheet, get_cashflow],
+                tools=[get_fundamentals, get_income_statement, get_balance_sheet, get_cashflow, get_fundamental_ratios],
                 add_web_read=False,  # fundamentals doesn't read news/article full text
                 schema=FundamentalsReport, render=render_fundamentals_report,
                 agent_name="Fundamentals Analyst", system_message=system_message,
@@ -172,6 +177,7 @@ def _build_system_message(
     income: str,
     balance: str,
     cashflow: str,
+    ratios: str = "",
     regime_context: str,
     peer_block: str = "",
     framework_note: str = "",
@@ -198,6 +204,11 @@ def _build_system_message(
 <start_of_cashflow>
 {cashflow}
 <end_of_cashflow>
+
+### Pre-computed fundamental ratios (CFA-grade, computed from the latest reported statements)
+<start_of_ratios>
+{ratios}
+<end_of_ratios>
 {peer_block}
 ## How to analyze
 

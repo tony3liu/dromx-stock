@@ -8,6 +8,8 @@ import { RunWorkbench } from "./components/RunWorkbench";
 import { CompareView } from "./components/CompareView";
 import { PerformancePanel } from "./components/PerformancePanel";
 import { HedgeView } from "./components/HedgeView";
+import { RiskView } from "./components/RiskView";
+import { OptimizeView } from "./components/OptimizeView";
 import { BacktestView } from "./components/BacktestView";
 import { Screener } from "./components/Screener";
 import { Monitor } from "./components/Monitor";
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="/app/compare" element={<CompareBridge />} />
           <Route path="/app/performance" element={<PerformancePanel />} />
           <Route path="/app/hedge" element={<HedgeView />} />
+          <Route path="/app/risk" element={<RiskView />} />
+          <Route path="/app/optimize" element={<OptimizeView />} />
           <Route path="/app/backtest" element={<BacktestView />} />
           <Route path="/app/settings" element={<Settings />} />
           <Route path="/app/config" element={<AppSettings />} />
@@ -100,6 +104,8 @@ function Shell() {
         compareActive={pathname === "/app/compare"}
         performanceActive={pathname === "/app/performance"}
         hedgeActive={pathname === "/app/hedge"}
+        riskActive={pathname === "/app/risk"}
+        optimizeActive={pathname === "/app/optimize"}
         backtestActive={pathname === "/app/backtest"}
         screenerActive={pathname === "/app/screener"}
         monitorActive={pathname === "/app/monitor"}
@@ -114,6 +120,8 @@ function Shell() {
         onCompare={() => navigate("/app/compare")}
         onPerformance={() => navigate("/app/performance")}
         onHedge={() => navigate("/app/hedge")}
+        onRisk={() => navigate("/app/risk")}
+        onOptimize={() => navigate("/app/optimize")}
         onBacktest={() => navigate("/app/backtest")}
         onScreener={() => navigate("/app/screener")}
         onMonitor={() => navigate("/app/monitor")}

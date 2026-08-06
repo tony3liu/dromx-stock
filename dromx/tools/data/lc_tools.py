@@ -18,7 +18,6 @@ from dromx.dataflows.reddit import fetch_reddit_posts
 from dromx.dataflows.stocktwits import fetch_stocktwits_messages
 from dromx.dataflows.x_twitter import fetch_x_posts
 
-
 # ---------------------------------------------------------------------------
 # from agents/utils/core_stock_tools.py
 # ---------------------------------------------------------------------------
@@ -161,6 +160,34 @@ def get_income_statement(
         str: A formatted report containing income statement data
     """
     return route_to_vendor("get_income_statement", ticker, freq, curr_date)
+
+
+# ---------------------------------------------------------------------------
+# P0-2: CFA 级基本面比率（DuPont/ROE/流动性/偿债/效率），供分析师直接使用
+# ---------------------------------------------------------------------------
+
+
+@tool
+def get_fundamental_ratios(
+    ticker: Annotated[str, "ticker symbol"],
+    curr_date: Annotated[str, "current date you are trading at, yyyy-mm-dd"] = None,
+) -> str:
+    """
+    Compute CFA-grade fundamental ratios for a ticker: profitability (ROE/ROA/
+    ROIC/margins), DuPont 3- and 5-factor decomposition, liquidity (current/quick/
+    cash), solvency (debt-to-assets, D/E), efficiency (asset/inventory/receivables
+    turnover), cash-flow quality (OCF/NI, FCF), and valuation multiples (PE/PB/PS).
+    The tool fetches the latest reported three statements across vendors and does
+    the math itself, so you do not need to compute ratios from raw statement CSVs.
+    Args:
+        ticker (str): Ticker symbol of the company
+        curr_date (str): Current date you are trading at, yyyy-mm-dd
+    Returns:
+        str: A formatted ratio report. Use it for financial-health and valuation input.
+    """
+    from dromx.dataflows.fundamental_ratios import build_fundamental_ratios
+    today = curr_date or str(__import__("datetime").date.today())
+    return build_fundamental_ratios(ticker, today)
 
 
 # ---------------------------------------------------------------------------

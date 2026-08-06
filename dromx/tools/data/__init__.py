@@ -103,6 +103,25 @@ def _get_macro_data(args: dict) -> str:
         return tool_error(f"Failed to get macro data: {e}")
 
 
+def _get_macro_cycle(args: dict) -> str:
+    """经济周期相位（复苏/过热/滞胀/衰退 + 行业配置建议）"""
+    curr_date = args.get("curr_date", "")
+    try:
+        from dromx.dataflows.market_cycles import build_cycle_report, detect_cycle_phase
+        if curr_date:
+            result = build_cycle_report(curr_date)
+            return tool_result({"data": result})
+        import json as _json
+
+        # 无日期 → 返回结构化相位（assistant 可以直接用）
+        from datetime import date as _date
+        today = str(_date.today().isoformat())
+        phase = detect_cycle_phase(today)
+        return tool_result({"data": phase})
+    except Exception as e:
+        return tool_error(f"Failed to get macro cycle: {e}")
+
+
 def _get_prediction_markets(args: dict) -> str:
     """获取预测市场数据"""
     try:
@@ -338,6 +357,22 @@ registry.register(
     },
     handler=_get_macro_data,
     description="获取宏观经济数据",
+)
+
+registry.register(
+    name="get_macro_cycle",
+    toolset="data",
+    schema={
+        "description": "判断当前经济周期相位（复苏/过热/滞胀/衰退）及资产与行业配置建议。基于 FRED 的增长（INDPRO/GDP）与通胀（CPI）同比双轴判断，辅以收益率曲线与失业率交叉验证。当用户问『现在处于什么经济周期』『宏观环境如何』『该配置什么行业』时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "curr_date": {"type": "string", "description": "分析日期 yyyy-mm-dd，默认今天"},
+            },
+        },
+    },
+    handler=_get_macro_cycle,
+    description="经济周期相位判断 + 行业配置建议",
 )
 
 registry.register(
@@ -720,6 +755,7 @@ from .lc_tools import (  # noqa: E402
     fetch_x_posts_tool,
     get_balance_sheet,
     get_cashflow,
+    get_fundamental_ratios,
     get_fundamentals,
     get_global_news,
     get_income_statement,
@@ -739,6 +775,7 @@ __all__ = [
     "get_balance_sheet",
     "get_cashflow",
     "get_fundamentals",
+    "get_fundamental_ratios",
     "get_global_news",
     "get_income_statement",
     "get_indicators",

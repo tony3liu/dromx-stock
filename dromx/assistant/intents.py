@@ -9,7 +9,7 @@ from __future__ import annotations
 INTENT_KEYWORDS: dict[str, list[str]] = {
     "deep_analysis": ["分析", "研究", "看看", "评估", "调研", "深度"],
     "sector_question": ["板块", "行业", "领域", "赛道", "见底", "见顶", "趋势"],
-    "capital_rotation": ["轮动", "资金流向", "切换", "调仓", "换仓", "资金"],
+    "capital_rotation": ["轮动", "资金流向", "切换", "调仓", "换仓", "资金", "宏观", "经济", "周期", "利率", "通胀", "滞胀", "衰退", "过热", "复苏", "加息", "降息"],
     "my_operation": ["我的", "操作", "买", "卖", "持仓", "成本", "补救", "对不对"],
     "backtest": ["回测", "历史", "复盘", "表现"],
     "screener": ["筛选", "选股", "找股票", "筛选器"],
@@ -21,7 +21,7 @@ INTENT_KEYWORDS: dict[str, list[str]] = {
 INTENT_DEFAULT_TOOLS: dict[str, list[str]] = {
     "deep_analysis": ["run_deep_analysis"],
     "sector_question": ["list_sectors", "get_sector_quote", "get_capital_flow", "get_sector_news"],
-    "capital_rotation": ["list_sectors", "get_capital_flow", "get_sector_quote", "get_macro_data"],
+    "capital_rotation": ["list_sectors", "get_capital_flow", "get_sector_quote", "get_macro_data", "get_macro_cycle"],
     "my_operation": ["get_my_position", "get_stock_data", "analyze_my_operation"],
     "backtest": ["run_backtest"],
     "screener": ["run_screener"],
@@ -60,7 +60,7 @@ def classify_intent(question: str) -> str:
 INTENT_DESCRIPTIONS: dict[str, str] = {
     "deep_analysis": "深度分析某一只股票（基本面/技术面/新闻/情绪综合研究）",
     "sector_question": "板块/行业/赛道问题（如某板块是否见底、见顶、趋势如何）",
-    "capital_rotation": "资金流向与板块轮动（如资金会轮动到哪些板块、如何调仓）",
+    "capital_rotation": "资金流向与板块轮动（如资金会轮动到哪些板块、如何调仓）；宏观经济周期判断（如现在处于什么经济周期、宏观环境如何）",
     "my_operation": "用户自己的持仓或操作复盘（如我的操作对不对、怎么补救、成本价）",
     "backtest": "策略回测或历史表现复盘",
     "screener": "条件选股/筛选股票",

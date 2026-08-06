@@ -34,9 +34,10 @@ import logging
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from webapp.backend import auth, backtest, factor, hedge, jobs, monitor, notify, performance, portfolio, report, runner, scheduler, sizing, store, strategy
+from webapp.backend import auth, backtest, factor, hedge, jobs, monitor, notify, optimize, performance, portfolio, report, risk, runner, scheduler, sizing, store, strategy
 from webapp.backend import assistant as assistant_api
 from webapp.backend.schemas import (
     BacktestRequest,
@@ -283,6 +284,23 @@ def get_factor(run_id: str, _: None = Depends(auth.require_auth)) -> dict:
 def get_hedge(_: None = Depends(auth.require_auth)) -> dict:
     """Cross-instrument hedge advisor over all analysed names (correlation clusters)."""
     return hedge.build_hedge_report()
+
+
+@app.get("/api/risk")
+def get_risk(_: None = Depends(auth.require_auth)) -> dict:
+    """Portfolio VaR + stress testing over the user's holdings."""
+    return risk.build_risk_report()
+
+
+class OptimizeRequest(BaseModel):
+    symbols: list[str] = []
+    strategy: str = "max_sharpe"
+
+
+@app.post("/api/optimize")
+def get_optimize(req: OptimizeRequest, _: None = Depends(auth.require_auth)) -> dict:
+    """Mean-variance portfolio optimization (max_sharpe / min_volatility / equal_weight)."""
+    return optimize.optimize_portfolio(req.symbols, req.strategy)
 
 
 @app.get("/api/backtest/estimate")
