@@ -14,26 +14,24 @@ bounded, best-effort read — errors surface as HTTP 4xx/5xx, never crash the ap
 """
 from __future__ import annotations
 
-import logging
 import re
 from dataclasses import asdict
 from datetime import date
-from pathlib import Path
 
-import polars as pl
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from dromx.strategy.ai_screen import (
     AI_STRATEGY_DIR,
+    _adapter,  # noqa: F401 — 供 scheduler.py 经 strategy_api._adapter 复用
     get_engine as _get_engine_core,
     reload_engines,
 )
-from dromx.strategy.data_adapter import DataAdapter
 from dromx.strategy.engine import StrategyEngine
 from webapp.backend import auth
 
-logger = logging.getLogger("dromx.web.strategy")
+# scheduler.py 引用 ``strategy_api._adapter`` 做监控/预热；复用 ai_screen 的单例
+# 实例（同一 DataAdapter，避免重复创建与缓存分叉）。
 
 # 引擎缓存统一在 dromx.strategy.ai_screen（投研助手工具与 web 端点共用）
 _MARKETS = ("hk", "us", "cn")

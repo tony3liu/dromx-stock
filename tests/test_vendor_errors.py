@@ -56,6 +56,9 @@ class RouterHandlesBaseTypesTests(unittest.TestCase):
 
     def tearDown(self):
         config_module._config = copy.deepcopy(default_config.DEFAULT_CONFIG)
+        # 速率限制测试会把 vendor 写进全局 cooldown，污染后续测试的 vendor 链
+        # （cooldown 内该 vendor 被跳过 → 剩余 vendor 为空 → 抛 RuntimeError 而非预期异常）。
+        interface._VENDOR_COOLDOWN.clear()
 
     def test_rate_limit_subclass_caught_by_base(self):
         # A vendor-named rate-limit error skips to the next vendor in the chain.

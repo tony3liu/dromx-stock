@@ -105,7 +105,7 @@ class DataAdapter:
         market: str,
         as_of: date,
         *,
-        prefilter: "pl.Expr | None" = None,
+        prefilter: pl.Expr | None = None,
         max_candidates: int | None = None,
     ) -> pl.DataFrame:
         """Return the enriched full-market frame for ``market`` on ``as_of``.
@@ -347,6 +347,9 @@ class DataAdapter:
 
     def _read_latest_cache(self, market: str) -> pl.DataFrame | None:
         """读取该市场最新一天的缓存宇宙（快照源全挂时的兜底）"""
+        # use_cache=False 时连兜底缓存也禁用（测试/无盘环境不应读到磁盘缓存）
+        if not self._use_cache:
+            return None
         try:
             candidates = sorted(
                 _CACHE_DIR.glob(f"{market}_*.parquet"),
