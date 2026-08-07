@@ -133,22 +133,22 @@ def _yoy(series: pd.Series | None, months: int = 12) -> float | None:
 
 
 def _trend(series: pd.Series | None, window: int = 6) -> str | None:
-    """近 window 期趋势：'rising' / 'falling' / 'flat'（用线性斜率符号）。"""
+    """近 window 期趋势：'rising' / 'falling' / 'flat'（线性斜率，带相对容差）。"""
     if series is None or len(series) < 3:
         return None
-    recent = series.iloc[-window:]
+    recent = series.iloc[-window:].astype(float)
     x = list(range(len(recent)))
-    y = recent.astype(float).tolist()
+    y = recent.tolist()
     n = len(x)
     mean_x = sum(x) / n
     mean_y = sum(y) / n
-    slope = sum((x[i] - mean_x) * (y[i] - mean_y) for i in range(n)) / (
-        sum((x[i] - mean_x) ** 2 for i in range(n)) or 1.0
-    )
-    if slope > 0:
-        return "rising"
-    if slope < 0:
-        return "falling"
+    denom = sum((x[i] - mean_x) ** 2 for i in range(n)) or 1.0
+    slope = sum((x[i] - mean_x) * (y[i] - mean_y) for i in range(n)) / denom
+    # 相对容差：斜率绝对值小于序列量级的 0.5% 视为 flat
+    scale = max(abs(min(y)), abs(max(y)), 1e-12)
+    rel = abs(slope) / scale
+    if rel > 0.005:
+        return "rising" if slope > 0 else "falling"
     return "flat"
 
 

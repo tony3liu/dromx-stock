@@ -135,27 +135,26 @@ def _get(df: pd.DataFrame, field: str) -> float | None:
     """按逻辑字段名取最新一期数值（跨中英文行名）。
 
     vendor 列序并不统一（yfinance/东财/新浪最新在前，SEC 按报告期排序），
-    因此按列名解析日期取最大日期列；解析失败的列保持相对顺序。
-    同一字段多行命中的取第一行（别名优先级）。
-    """
+    因此按列名解析日期取最大日期列；解析失败的列（如 TTM/年度列）保持
+    原顺序排在日期列之后（不反转），避免把 TTM 误当最新季度。
+    同一字段多行命中的取第一行（别名优先级）。"""
     if df.empty:
         return None
 
-    # 按列名日期降序排序列索引（可解析日期优先）
     cols = list(df.columns)
     parsed = [pd.to_datetime(str(c), errors="coerce") for c in cols]
-    dated_sorted = sorted(
-        range(len(cols)),
-        key=lambda i: (parsed[i] if not pd.isna(parsed[i]) else pd.Timestamp.min, i),
-        reverse=True,
-    )
+    # 可解析日期的列按日期降序；非日期列保持原顺序（排在日期列之后）
+    dated_idx = [i for i, p in enumerate(parsed) if not pd.isna(p)]
+    undated_idx = [i for i, p in enumerate(parsed) if pd.isna(p)]
+    dated_sorted = sorted(dated_idx, key=lambda i: parsed[i], reverse=True)
+    col_order = dated_sorted + undated_idx
 
     for row_name in df.index:
         key = str(row_name).strip().lower()
         if _ROW_TO_FIELD.get(key) != field:
             continue
-        row = df.loc[row_name]
-        for col_idx in dated_sorted:
+        row = df.loc[row_name] if row_name not in df.index.duplicated() else df.loc[[row_name]].iloc[0]
+        for col_idx in col_order:
             v = row.iloc[col_idx]
             if pd.notna(v):
                 return float(v)
@@ -210,8 +209,8 @@ def compute_ratios(
     ocf = _get(cashflow, "operating_cashflow") if cashflow is not None else None
     capex = _get(cashflow, "capex") if cashflow is not None else None
 
-    # 毛利率：优先毛利行，缺失时营收-营业成本推导
-    gross = gp / rev if (gp is not None and rev) else _div(rev - cost, rev)
+    # 毛利率：优先毛利行，缺失时营收-营业成本推导（任一缺失则 None，不崩溃）
+    gross = _div(gp, rev) if gp is not None else (_div((rev - cost), rev) if (rev is not None and cost is not None) else None)
 
     # 利润率
     net_margin = _div(ni, rev)
@@ -228,7 +227,8 @@ def compute_ratios(
     equity_multiplier = _div(assets, eq)
 
     # DuPont 五因子：税负负担=NI/EBT, 利息负担=EBT/EBIT(=oi), 营业利润率=EBIT/Rev
-    ebt = (ni + iexp) if (ni is not None and iexp is not None) else None
+    # 利息费用方向不统一（多数记正，部分记负），取绝对值后加回净利得 EBT 近似
+    ebt = (ni + abs(iexp)) if (ni is not None and iexp is not None) else None
     tax_burden = _div(ni, ebt)
     interest_burden = _div(ebt, oi)
 
@@ -311,6 +311,29 @@ def _parse_statement_text(text: str, label: str) -> pd.DataFrame:
     return parse_statement_csv(text)
 
 
+def _parse_shares(text: str):
+    """解析快照文本中的总股本，支持千分位与 K/M/B 后缀。
+
+    匹配 ``Total Shares ... <值>``；值形如 1,234,567,890 / 1234.5M / 1.23B。
+    解析失败返回 None（调用方降级）。"""
+    import re as _re
+    m = _re.search(r"Total Shares[^\d]*([\d.,]+\s*[KMB]?)", text, _re.IGNORECASE)
+    if not m:
+        return None
+    raw = m.group(1).replace(",", "").strip().upper()
+    mult = 1.0
+    if raw.endswith("K"):
+        mult, raw = 1e3, raw[:-1]
+    elif raw.endswith("M"):
+        mult, raw = 1e6, raw[:-1]
+    elif raw.endswith("B"):
+        mult, raw = 1e9, raw[:-1]
+    try:
+        return float(raw) * mult
+    except ValueError:
+        return None
+
+
 def build_fundamental_ratios(ticker: str, curr_date: str) -> str:
     """拉取三表并输出格式化比率报告（供 assistant / 分析师调用）。
 
@@ -343,10 +366,7 @@ def build_fundamental_ratios(ticker: str, curr_date: str) -> str:
     shares = None
     try:
         snap = route_to_vendor("get_fundamentals", ticker, curr_date)
-        import re as _re
-        m = _re.search(r"Total Shares[^\d]*([\d.]+)", str(snap))
-        if m:
-            shares = float(m.group(1))
+        shares = _parse_shares(str(snap))
     except Exception as _exc:  # noqa: BLE001 — 估值增强失败不阻断
         logger.warning("fundamental_ratios: share count unavailable for %s: %s", ticker, _exc)
     if shares:

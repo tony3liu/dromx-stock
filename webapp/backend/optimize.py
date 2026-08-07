@@ -25,11 +25,12 @@ import math
 from datetime import date as _date
 
 import numpy as np
-
-logger = logging.getLogger(__name__)
+import pandas as pd
 
 from . import portfolio
-from .hedge import _returns as _name_returns
+from .hedge import _returns_series
+
+logger = logging.getLogger(__name__)
 
 _LOOKBACK = 120
 _TRADING_DAYS = 252
@@ -41,24 +42,29 @@ def _returns_matrix(symbols: list[str], lookback: int = _LOOKBACK):
     """Aligned daily-return matrix for the given symbols.
 
     Returns (symbols, np.ndarray (n_days × n)) where each column is one name's
-    returns, aligned to the shortest available series. Names with < 6 days are
-    dropped.
-    """
-    series: dict[str, list[float]] = {}
+    returns. Names with < 6 days are dropped. Rows are aligned on the
+    intersection of each name's trading dates (cross-market safe: US/HK/A have
+    different calendars, so position-based alignment would mix different dates",
+    and inject spurious covariance)."""
+    series: dict[str, pd.Series] = {}
     skipped: list[str] = []
     for s in symbols:
-        r = _name_returns(s, _date.today().isoformat(), lookback)
+        r = _returns_series(s, _date.today().isoformat(), lookback)
         if r is None or len(r) < 6:
             skipped.append(s)
         else:
-            series[s] = r[-lookback:]
+            series[s] = r.iloc[-lookback:]
 
     usable = [s for s in symbols if s in series]
     if not usable:
         return [], np.zeros((0, 0)), skipped
 
-    n_days = min(len(r) for r in series.values())
-    mat = np.array([series[s][-n_days:] for s in usable], dtype=float).T  # (days, names)
+    # 共同交易日交集（跨市场安全）
+    common = set.intersection(*(set(r.index) for r in series.values()))
+    if not common:
+        return [], np.zeros((0, 0)), skipped + [f"{s}(无共同交易日)" for s in usable]
+    common = sorted(common)
+    mat = np.array([series[s].reindex(common).fillna(0.0).tolist() for s in usable], dtype=float).T
     return usable, mat, skipped
 
 
@@ -175,13 +181,22 @@ def _frontier(mean: np.ndarray, cov: np.ndarray, n_points: int = 25):
         except np.linalg.LinAlgError:
             continue
         ones = np.ones(len(mean))
-        # Lagrangian minimum-variance for fixed return: w ∝ Σ⁻¹(μ - λ1),
-        # solve λ so that wᵀμ = target.
+        # Lagrangian minimum-variance for fixed return: w(λ) = Σ⁻¹(μ - λ1) / 1ᵀΣ⁻¹(μ - λ1).
+        # Solve λ so that wᵀμ = target: λ = (a - b·target) / (b - c·target)
+        # where a = μᵀΣ⁻¹μ, b = 1ᵀΣ⁻¹μ, c = 1ᵀΣ⁻¹1. (Numerator sign matters:)
+        # wᵀμ = (a - λb)/(b - λc); setting = target gives a - λb = target(b - λc)
+        # ⇒ λ(b - c·target) = a - b·target.
         a = float(mean @ inv @ mean)
         b = float(ones @ inv @ mean)
         c = float(ones @ inv @ ones)
-        lam = (b * target - a) / (b - c * target) if abs(b - c * target) > 1e-12 else 0.0
-        w_raw = inv @ (mean - lam * ones)
+        lam = (a - b * target) / (b - c * target) if abs(b - c * target) > 1e-12 else 0.0
+        w_num = inv @ (mean - lam * ones)          # Σ⁻¹(μ - λ1)
+        w_den = float(ones @ w_num)                 # 1ᵀΣ⁻¹(μ - λ1)（归一化分母）
+        # 拉格朗日解 w(λ) = Σ⁻¹(μ-λ1) / 1ᵀΣ⁻¹(μ-λ1) 本身已归一（Σwᵢ=1）。
+        # 注意：λ 是从归一化约束推得的，所以必须除以 w_den 才能让 wᵀμ=target。
+        if w_den == 0 or not np.isfinite(w_den):
+            continue
+        w_raw = w_num / w_den
         w = _project_nonneg(w_raw)
         ret = _port_return(w, mean)
         vol = _port_vol(w, cov)

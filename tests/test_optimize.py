@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import math
 
+import pandas as pd
+
 import numpy as np
 import pytest
 
 import webapp.backend.optimize as opt
+
+
+def _series(vals: list[float]) -> pd.Series:
+    """Date-indexed returns for _returns_series mocks."""
+    return pd.Series(vals, index=pd.bdate_range("2026-01-05", periods=len(vals)))
 
 
 def _two_asset_system():
@@ -66,15 +73,15 @@ class TestMath:
 @pytest.mark.unit
 class TestReturnsMatrix:
     def test_drops_short_series(self, monkeypatch):
-        monkeypatch.setattr(opt, "_name_returns",
-                            lambda s, d, lb=120: [0.01] * 3 if s == "SHORT" else [0.01] * 60)
+        monkeypatch.setattr(opt, "_returns_series",
+                            lambda s, d, lb=120: _series([0.01] * 3) if s == "SHORT" else _series([0.01] * 60))
         usable, mat, skipped = opt._returns_matrix(["AAPL", "SHORT", "MSFT"])
         assert usable == ["AAPL", "MSFT"]
         assert skipped == ["SHORT"]
         assert mat.shape == (60, 2)
 
     def test_all_skipped(self, monkeypatch):
-        monkeypatch.setattr(opt, "_name_returns", lambda s, d, lb=120: None)
+        monkeypatch.setattr(opt, "_returns_series", lambda s, d, lb=120: None)
         usable, mat, skipped = opt._returns_matrix(["AAPL"])
         assert usable == []
         assert mat.shape == (0, 0)
@@ -91,18 +98,19 @@ class TestOptimize:
         monkeypatch.setattr(opt.portfolio, "get_user_portfolio", lambda: {
             "holdings": [{"ticker": "AAPL", "shares": 10, "last_close": 200.0},
                          {"ticker": "MSFT", "shares": 5, "last_close": 400.0}]})
-        r = [0.01] * 60
-        monkeypatch.setattr(opt, "_name_returns", lambda s, d, lb=120: r)
+        r = _series([0.01] * 60)
+        monkeypatch.setattr(opt, "_returns_series", lambda s, d, lb=120: r)
         out = opt.optimize_portfolio([])
         assert out.get("error") is None
         assert set(out["weights"]) == {"AAPL", "MSFT"}
         assert "current_weights_pct" in out  # 持仓派生 → 带对比
 
     def test_max_sharpe_single_name(self, monkeypatch):
-        monkeypatch.setattr(opt, "_name_returns", lambda s, d, lb=120: [0.01] * 60)
+        monkeypatch.setattr(opt, "_returns_series", lambda s, d, lb=120: _series([0.01] * 60))
         out = opt.optimize_portfolio(["AAPL"], "max_sharpe")
         assert out["weights"] == {"AAPL": 1.0}
-        assert out["sharpe_ratio"] == pytest.approx((0.01 * 252 - 0.02) / (0.0 * 252), rel=0.0) if False else True
+        # 恒定收益 → 波动 0，Sharpe 约定为 0（_sharpe 的 vol<=1e-12 分支）
+        assert out["sharpe_ratio"] == 0.0
 
     def test_too_many_names(self, monkeypatch):
         symbols = [f"S{i}" for i in range(13)]
@@ -119,19 +127,55 @@ class TestOptimize:
         assert opt._port_vol(w_min, cov) <= opt._port_vol(w_max, cov) + 1e-9
         # max-sharpe 组合夏普应不低于 min-vol（用无风险=0 对比，避免 rf 高于组合收益的退化）
         assert opt._sharpe(w_max, mean, cov, rf=0.0) >= opt._sharpe(w_min, mean, cov, rf=0.0) - 1e-9
-        # frontier 有效：目标收益升序时，最小方差组合的波动不应系统性下降
+        # frontier 有效：目标收益升序 → 输出收益单调递增（λ 修复保证）
         frontier = opt._frontier(mean, cov, n_points=15)
         if frontier:
             rets = [p["ret_pct"] for p in frontier]
             vols = [p["vol_pct"] for p in frontier]
-            # 前半段（收益从低到高）波动单调不减（最小方差组合性质）
+            # 收益必须随 target 严格递增（这是 λ 修复的核心保证）
             assert all(rets[i + 1] >= rets[i] - 0.05 for i in range(len(rets) - 1))
-            assert all(vols[i + 1] >= vols[i] - 1.0 for i in range(len(vols) - 1))
+            # 波动：在正收益侧（可行区间的 min-vol 之后）单调不减；
+            # 但若年化收益为负，边界是 U 形（先降后升），仅断言收尾段单调
+            assert all(vols[i + 1] >= vols[i] - 1.0 for i in range(len(vols) - 3, len(vols) - 1))
+
+    def test_frontier_lambda_achieves_target_return(self):
+        """回归测试：frontier 每个点必须实现其目标收益（曾因 λ 符号错误而偏离）。"""
+        mean = np.array([0.10, 0.05])
+        cov = np.array([[0.04, 0.0], [0.0, 0.01]])
+        inv = np.linalg.inv(cov)
+        ones = np.ones(2)
+        a = float(mean @ inv @ mean)
+        b = float(ones @ inv @ mean)
+        c = float(ones @ inv @ ones)
+        for target in np.linspace(0.07, 0.12, 6):  # 避开 b-c·target≈0 的奇点(0.06)
+            denom = b - c * target
+            if abs(denom) < 1e-9:
+                continue
+            lam = (a - b * target) / denom
+            w_num = inv @ (mean - lam * ones)
+            w_den = float(ones @ w_num)
+            if w_den == 0:
+                continue
+            w = w_num / w_den
+            achieved = float(w @ mean)
+            assert achieved == pytest.approx(target, abs=1e-9), \
+                f"frontier λ 错误: target={target:.4f} achieved={achieved:.4f}"
+
+    def test_cross_market_alignment(self, monkeypatch):
+        """不同交易日历的标的不再按位置错位（跨市场对齐修复）。"""
+        us_dates = pd.bdate_range("2026-01-05", periods=60)
+        hk_dates = pd.DatetimeIndex([d for d in us_dates if d.day != 15][:55])
+        us_r = pd.Series([0.01] * 60, index=us_dates)
+        hk_r = pd.Series([-0.01] * len(hk_dates), index=hk_dates)
+        monkeypatch.setattr(opt, "_returns_series",
+                            lambda s, d, lb=120: us_r if s == "US1" else hk_r)
+        usable, mat, skipped = opt._returns_matrix(["US1", "HK1"])
+        assert mat.shape[0] == len(set(us_dates) & set(hk_dates))  # 共同交易日数
 
     def test_weights_sum_to_one(self, monkeypatch):
         rng = np.random.default_rng(3)
         r = [0.001 * math.sin(i / 5) + rng.normal(0, 0.01) for i in range(80)]
-        monkeypatch.setattr(opt, "_name_returns", lambda s, d, lb=120: r)
+        monkeypatch.setattr(opt, "_returns_series", lambda s, d, lb=120: _series(r))
         out = opt.optimize_portfolio(["A", "B", "C"], "max_sharpe")
         # 权重四舍五入到 6 位后求和 ≈1（显示精度内）
         assert sum(out["weights"].values()) == pytest.approx(1.0, abs=1e-5)

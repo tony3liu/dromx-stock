@@ -236,3 +236,6 @@ brand/logo-icon.svg
 webapp/frontend/vite.shots.config.ts
 .scripts/
 scripts/*
+
+# 子代理临时工作目录（pi-subagents 任务产物，勿提交）
+.pi-subagents/

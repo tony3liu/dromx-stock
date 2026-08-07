@@ -48,6 +48,45 @@ def _returns(symbol: str, curr_date: str, lookback: int = _LOOKBACK):
             for i in range(1, len(closes)) if closes[i - 1] > 0]
 
 
+def _returns_series(symbol: str, curr_date: str, lookback: int = _LOOKBACK):
+    """Daily returns as a date-indexed pd.Series (for cross-market alignment).
+
+    ``_returns`` returns a bare list, which is fine for same-calendar names but
+    wrong across markets (US ~252 / HK ~247 / A ~242 trading days per year plus
+    different holidays): pairing by list position mixes different dates and
+    injects spurious correlation into VaR / covariance / beta. This variant
+    keeps the date, so callers can reindex on the intersection of calendars."""
+    from dromx.dataflows.stockstats_utils import load_ohlcv
+
+    df = load_ohlcv(symbol, curr_date)
+    if df is None or getattr(df, "empty", True):
+        return None
+    cols = {c.lower(): c for c in df.columns}
+    dcol, ccol = cols.get("date"), cols.get("close")
+    if dcol is None or ccol is None:
+        return None
+    out: list[tuple] = []
+    for _, row in df.iterrows():
+        d = str(row[dcol])[:10]
+        if not d or d > curr_date:
+            continue
+        try:
+            out.append((d, float(row[ccol])))
+        except (TypeError, ValueError):
+            continue
+    closes = out[-(lookback + 1):]
+    if len(closes) < 7:
+        return None
+    rets = {}
+    for i in range(1, len(closes)):
+        prev = closes[i - 1][1]
+        cur = closes[i][1]
+        if prev > 0:
+            rets[closes[i][0]] = (cur - prev) / prev
+    import pandas as pd
+    return pd.Series(rets).sort_index()
+
+
 def _corr(a: list[float], b: list[float]) -> float | None:
     n = min(len(a), len(b))
     if n < 5:

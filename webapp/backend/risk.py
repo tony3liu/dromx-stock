@@ -24,10 +24,12 @@ import logging
 import math
 from datetime import date as _date
 
-logger = logging.getLogger(__name__)
+import pandas as pd
 
 from . import portfolio
-from .hedge import _returns as _name_returns
+from .hedge import _returns_series
+
+logger = logging.getLogger(__name__)
 
 _LOOKBACK = 120          # daily return window for VaR
 _DAILY_TO_ANNUAL = math.sqrt(252)
@@ -102,15 +104,18 @@ def build_risk_report(
 
     book_value = sum(p["market_value"] for p in snapshot)
 
-    # ---- daily return series per name (aligned by construction to the same lookback) ----
-    name_returns: dict[str, list[float]] = {}
+    # ---- daily return series per name (date-indexed, aligned on calendar intersection) ----
+    # Cross-market names (US/HK/A) have different trading calendars; pairing by
+    # list position would mix different dates and inject spurious correlation,
+    # so we align on the intersection of each name's trading dates.
+    name_returns: dict[str, pd.Series] = {}
     skipped: list[str] = []
     for p in snapshot:
-        r = _name_returns(p["ticker"], _date.today().isoformat(), lookback)
+        r = _returns_series(p["ticker"], _date.today().isoformat(), lookback)
         if r is None or len(r) < 6:
             skipped.append(p["ticker"])
         else:
-            name_returns[p["ticker"]] = r[-lookback:]
+            name_returns[p["ticker"]] = r.iloc[-lookback:]
 
     usable = [p for p in snapshot if p["ticker"] in name_returns]
     if not usable:
@@ -123,13 +128,23 @@ def build_risk_report(
 
     # ---- weights & portfolio daily P&L (in currency, not %) ----
     weights = {p["ticker"]: p["market_value"] / book_value for p in usable}
-    # Portfolio daily return = Σ w_i * r_i,t, then convert to book P&L.
-    n_days = min(len(r) for r in name_returns.values())
-    book_returns: list[float] = []
-    for t in range(n_days):
-        book_returns.append(
-            sum(weights[tkr] * name_returns[tkr][t - n_days] for tkr in name_returns)
-        )
+    # 对齐到所有标的中出现的共同交易日（日期交集，跨市场安全）
+    common_dates = set.intersection(*(set(r.index) for r in name_returns.values())) if name_returns else set()
+    if not common_dates:
+        return {
+            "verdict": "no_prices",
+            "message": "标的不存在共同交易日，无法计算组合 VaR。",
+            "book_value": round(book_value, 2),
+            "per_name": [], "book": None, "stress": None, "skipped": skipped,
+        }
+    common_dates = sorted(common_dates)
+    aligned = {tkr: r.reindex(common_dates) for tkr, r in name_returns.items()}
+    book_returns = [
+        sum(weights[tkr] * (aligned[tkr].iloc[t] if pd.notna(aligned[tkr].iloc[t]) else 0.0)
+            for tkr in aligned)
+        for t in range(len(common_dates))
+    ]
+    n_days = len(book_returns)
 
     # ---- book-level VaR (historical + parametric) ----
     losses = sorted(-r for r in book_returns)  # ascending worst→best of -ret
@@ -155,7 +170,8 @@ def build_risk_report(
     # beta_to_book = cov(r_i, r_book) / var(r_book).
     comp: list[dict] = []
     for p in usable:
-        ri = name_returns[p["ticker"]][-n_days:]
+        # 用已对齐到 common_dates 的序列（与 book_returns 同日历）
+        ri = aligned[p["ticker"]].fillna(0.0).tolist()
         beta = _beta(ri, book_returns)
         contrib_pct = weights[p["ticker"]] * beta if beta is not None else None
         var95 = book["var"].get("p95", {}).get("historical_value")
@@ -183,7 +199,7 @@ def build_risk_report(
         stress["worst_day_pct"] = round(worst_day * 100, 2)
 
     # ---- plain-language verdict ----
-    verdict = _verdict(book, stress, usable, skipped)
+    verdict = _verdict(book, stress, weights, skipped)
 
     return {
         "verdict": verdict["level"],
@@ -223,7 +239,7 @@ def _beta(asset_returns: list[float], book_returns: list[float]) -> float | None
     return cov / vb
 
 
-def _verdict(book: dict, stress: dict, usable: list, skipped: list) -> dict:
+def _verdict(book: dict, stress: dict, weights: dict, skipped: list) -> dict:
     """Turn the numbers into a short plain-language risk read."""
     var95 = (book.get("var") or {}).get("p95", {}) or {}
     hist_val = var95.get("historical_value")
@@ -237,11 +253,11 @@ def _verdict(book: dict, stress: dict, usable: list, skipped: list) -> dict:
         f"组合市值 {book['book_value']:,.0f}，95% VaR（历史模拟）≈ {hist_val:,.0f}"
         f"（{hist_pct:.1f}%），年化波动 {ann_vol}%。"
     ]
-    # concentration warning
-    top = max((c.get("weight_pct") or 0) for c in usable) if usable else 0
-    if top >= 60:
+    # concentration warning（用权重 dict 而非 snapshot 条目）
+    top = max(weights.values()) if weights else 0.0
+    if top >= 0.60:
         parts.append("单标的高度集中（权重 ≥60%），组合风险≈该标的自身风险，分散效果有限。")
-    elif len(usable) >= 3 and top <= 40:
+    elif len(weights) >= 3 and top <= 0.40:
         parts.append("分散度尚可（最大权重 ≤40%）。")
     if stress.get("crash_1d") is not None:
         parts.append(f"历史最差单日 ≈ {stress['crash_1d']:,.0f}（{stress['worst_day_pct']:.1f}%）。")

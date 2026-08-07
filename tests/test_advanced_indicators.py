@@ -110,7 +110,8 @@ class TestIndicatorMath:
         )
         res = obv(df)
         assert res["obv"] > 0
-        assert "上行" in res["obv_verdict"] or "支持" in res["obv_verdict"]
+        # 严格上涨+固定量 → OBV 必上行（修复前恒报"下行"）
+        assert res["obv_verdict"] == "OBV 上行（量能支持上涨）"
 
     def test_adx_weak_in_range(self):
         # 震荡数据 → ADX 应偏低

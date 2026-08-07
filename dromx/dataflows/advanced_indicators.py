@@ -51,6 +51,18 @@ def _latest(series: pd.Series, default: float | None = None) -> float | None:
     return float(valid.iloc[-1])
 
 
+def _shift_latest(series: pd.Series, n: int) -> float | None:
+    """Return the latest non-NaN value from n periods back (excluding the current bar).
+
+    ``series.iloc[-n:]`` would include the current bar, so ``prev`` computed that
+    way always equals the current value and trend verdicts can never fire. This
+    helper looks at the window ``[-n-1:-1]`` instead (the n values strictly
+    before the latest)."""
+    if len(series) < n + 1:
+        return None
+    return _latest(series.iloc[-(n + 1):-1])
+
+
 # ---------------------------------------------------------------------------
 # 趋势类指标
 # ---------------------------------------------------------------------------
@@ -75,16 +87,20 @@ def ichimoku(df: pd.DataFrame, conv: int = 9, base: int = 26, span_b: int = 52, 
     chikou_val = _latest(chikou)
 
     price = _latest(close)
-    cloud_top = max(_latest(senkou_a, 0.0), _latest(senkou_b, 0.0))
-    cloud_bot = min(_latest(senkou_a, 0.0), _latest(senkou_b, 0.0))
-    if price is None or cloud_top is None or cloud_bot is None:
+    senkou_a_val = _latest(senkou_a)
+    senkou_b_val = _latest(senkou_b)
+    # 云层需至少一侧有值才能判断；否则数据不足（不能拿 0.0 兜底制造假信号）
+    if price is None or senkou_a_val is None or senkou_b_val is None:
         trend = "数据不足"
-    elif price > cloud_top:
-        trend = "价格在云层上方（多头强势）"
-    elif price < cloud_bot:
-        trend = "价格在云层下方（空头强势）"
     else:
-        trend = "价格在云层内部（趋势不明，等待方向选择）"
+        cloud_top = max(senkou_a_val, senkou_b_val)
+        cloud_bot = min(senkou_a_val, senkou_b_val)
+        if price > cloud_top:
+            trend = "价格在云层上方（多头强势）"
+        elif price < cloud_bot:
+            trend = "价格在云层下方（空头强势）"
+        else:
+            trend = "价格在云层内部（趋势不明，等待方向选择）"
 
     return {
         "tenkan_sen": _latest(tenkan),
@@ -767,9 +783,9 @@ def obv(df: pd.DataFrame) -> dict:
     obv_val = (direction * volume).cumsum()
 
     v = _latest(obv_val)
-    prev = _latest(obv_val.iloc[-5:]) if len(obv_val) >= 5 else None
+    prev = _shift_latest(obv_val, 5)
     price = _latest(close)
-    price_prev = _latest(close.iloc[-5:]) if len(close) >= 5 else None
+    price_prev = _shift_latest(close, 5)
     if v is None or prev is None or price is None or price_prev is None:
         verdict = "数据不足"
     elif v > prev and price <= price_prev:
@@ -796,7 +812,7 @@ def adi(df: pd.DataFrame) -> dict:
     adi_val = (mfm.fillna(0) * volume).cumsum()
 
     v = _latest(adi_val)
-    prev = _latest(adi_val.iloc[-5:]) if len(adi_val) >= 5 else None
+    prev = _shift_latest(adi_val, 5)
     if v is None or prev is None:
         verdict = "数据不足"
     elif v > prev:
@@ -908,7 +924,7 @@ def vpt(df: pd.DataFrame) -> dict:
     vpt_val = (volume * close.pct_change()).fillna(0).cumsum()
 
     v = _latest(vpt_val)
-    prev = _latest(vpt_val.iloc[-5:]) if len(vpt_val) >= 5 else None
+    prev = _shift_latest(vpt_val, 5)
     if v is None or prev is None:
         verdict = "数据不足"
     elif v > prev:
@@ -934,7 +950,7 @@ def nvi(df: pd.DataFrame) -> dict:
     nvi_series = pd.Series(nvi_val, index=df.index)
 
     v = _latest(nvi_series)
-    prev = _latest(nvi_series.iloc[-10:]) if len(nvi_series) >= 10 else None
+    prev = _shift_latest(nvi_series, 10)
     if v is None or prev is None:
         verdict = "数据不足"
     elif v > prev:
