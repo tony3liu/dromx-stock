@@ -21,6 +21,7 @@ import time
 import uuid
 from typing import Any, Iterator
 
+from cli.stats_handler import StatsCallbackHandler
 from webapp.backend import store
 
 logger = logging.getLogger("dromx.web.runner")
@@ -286,6 +287,7 @@ def start_run(ticker: str, trade_date: str, analysts: list[str], depth: int,
         "shares": shares, "cost_basis": cost_basis, "holdings": holdings or [],
         "strategy_id": strategy_id,
         "rating": None, "created_at": store.now_iso(), "finished_at": None,
+        "usage": None,
         "final_state": {},
     })
 
@@ -303,9 +305,16 @@ def _worker(handle: RunHandle) -> None:
                      "message": "Another analysis is running; waiting for a slot…"})
         logger.info("run %s queued (waiting for slot)", handle.id)
         _RUN_SEM.acquire()
+    stats_handler: StatsCallbackHandler | None = None
     try:
         handle.emit({"type": "start", "run_id": handle.id,
                      "ticker": handle.ticker, "nodes": PIPELINE_NODES})
+
+        # Track LLM/tool usage for this run, the same way the CLI does
+        # (cli/main.py: callbacks bound to the LLM constructors via DromXGraph).
+        # get_graph_args() stays callback-free — passing the handler there too
+        # would double-count tokens (config callbacks propagate to child runs).
+        stats_handler = StatsCallbackHandler()
 
         # Build config from the configured engine (.env) + per-run overrides.
         from dromx.default_config import DEFAULT_CONFIG
@@ -322,7 +331,8 @@ def _worker(handle: RunHandle) -> None:
         analyst_keys = tuple(handle.analysts) if handle.analysts else (
             "market", "social", "news", "fundamentals", "industry")
         logger.info("run %s building graph (analysts=%s)", handle.id, ",".join(analyst_keys))
-        graph = DromXGraph(selected_analysts=analyst_keys, config=cfg)
+        graph = DromXGraph(selected_analysts=analyst_keys, config=cfg,
+                           callbacks=[stats_handler])
 
         # Detect asset type the way the engine/CLI does.
         asset_type = "stock"
@@ -408,7 +418,8 @@ def _worker(handle: RunHandle) -> None:
             "analysts": handle.analysts, "depth": handle.depth, "status": "done",
             "strategy_id": handle.strategy_id,
             "rating": handle.rating, "created_at": store.now_iso(),
-            "finished_at": store.now_iso(), "final_state": merged,
+            "finished_at": store.now_iso(), "usage": stats_handler.get_stats(),
+            "final_state": merged,
         })
         # Best-effort: also write the on-disk markdown report tree like the CLI.
         try:
@@ -431,6 +442,9 @@ def _worker(handle: RunHandle) -> None:
         handle.error = f"{type(exc).__name__}: {exc}"
         rec = store.load_run(handle.id) or {}
         rec.update({"status": "error", "finished_at": store.now_iso(), "error": handle.error})
+        # Keep partial usage on failure too — a cancelled/crashed run still burned tokens.
+        if stats_handler is not None:
+            rec["usage"] = stats_handler.get_stats()
         store.save_run(rec)
         handle.emit({"type": "error", "message": handle.error})
     finally:
