@@ -116,13 +116,94 @@ def _recover_from_freetext(
             return render(schema.model_validate_json(blob))
         except (ValidationError, ValueError) as exc:
             logger.warning("%s: free-text JSON did not match schema (%s); "
-                           "pretty-printing instead", agent_name, exc)
+                           "trying lenient salvage", agent_name, exc)
+            # OBS-dromx-stock-01：严格校验失败（LLM 产出"几乎合法"，个别字段缺/类型错）时，
+            # 先宽松挽救——补默认字段后再校验，保住结构化渲染，不整个丢弃降级为 blob。
+            salvaged = _lenient_salvage(blob, schema, render, agent_name)
+            if salvaged is not None:
+                return salvaged
+            logger.warning("%s: lenient salvage also failed; pretty-printing instead", agent_name)
 
     try:
         data = json.loads(blob)
     except (json.JSONDecodeError, ValueError):
         return None
     return _json_to_markdown(data)
+
+
+def _lenient_salvage(
+    blob: str,
+    schema: type[T],
+    render: Callable[[T], str],
+    agent_name: str,
+) -> str | None:
+    """OBS-01：LLM 产出的 JSON 几乎合法（个别必填字段缺/类型错）时，补默认后再校验+渲染。
+
+    递归给 schema 的必填字段补类型默认（str→""、list→[]、嵌套 BaseModel→递归补），
+    让"4 个字段错"的近合法输出仍能结构化渲染，避免昂贵的 free-text 重跑 + 结构丢失。
+    返回渲染后的 markdown，或 None（连补默认都构造不出）。
+    """
+    try:
+        data = json.loads(blob)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    try:
+        coerced = _coerce_to_schema(data, schema)
+        return render(schema.model_validate(coerced))
+    except (ValidationError, ValueError, TypeError) as exc:
+        logger.info("%s: lenient salvage construct failed (%s)", agent_name, exc)
+        return None
+
+
+def _coerce_to_schema(data: dict, schema: type[BaseModel]) -> dict:
+    """按 schema 字段补默认：缺失必填字段填类型默认，嵌套 BaseModel/list 递归。保留已有值。"""
+    out = dict(data)
+    for name, field in schema.model_fields.items():
+        ann = field.annotation
+        if name in out and out[name] is not None:
+            # 已有值：若是嵌套 BaseModel/其 list，递归补（防内层字段缺）
+            inner = _model_of(ann)
+            if inner is not None:
+                if isinstance(out[name], dict):
+                    out[name] = _coerce_to_schema(out[name], inner)
+                elif isinstance(out[name], list):
+                    out[name] = [_coerce_to_schema(x, inner) if isinstance(x, dict) else x for x in out[name]]
+            continue
+        # 缺失/None：填类型默认
+        out[name] = _default_for(ann)
+    return out
+
+
+def _model_of(ann: Any) -> type[BaseModel] | None:
+    """从注解取嵌套 BaseModel 类型（直接、Optional[Model]、list[Model]）；无则 None。"""
+    import typing
+    if isinstance(ann, type) and issubclass(ann, BaseModel):
+        return ann
+    for arg in typing.get_args(ann) or ():
+        if isinstance(arg, type) and issubclass(arg, BaseModel):
+            return arg
+    return None
+
+
+def _default_for(ann: Any) -> Any:
+    """注解 → 类型默认：list→[]、str→""、int/float→0、bool→False、嵌套 Model→补默认 dict、其余→""。"""
+    import typing
+    origin = typing.get_origin(ann)
+    if origin in (list, tuple, set) or ann in (list, tuple, set):
+        return []
+    if isinstance(ann, type):
+        if issubclass(ann, BaseModel):
+            return _coerce_to_schema({}, ann)
+        if ann is str:
+            return ""
+        if ann is bool:
+            return False
+        if ann in (int, float):
+            return 0
+    # Optional[X]/Union/Literal 等：str 默认最安全（Literal 会再校验失败则整体 salvage 返 None）
+    return ""
 
 
 def _json_to_markdown(data: Any, depth: int = 0) -> str:
