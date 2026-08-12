@@ -113,7 +113,7 @@ async def ask(
                         }, ensure_ascii=False),
                     }
                     return
-                # status / delta / tool_start / tool_end / cancelled 直接透传
+                # status / delta / tool_start / tool_end / cancelled / deep_start / deep_section 直接透传
                 yield {
                     "event": "message",
                     "data": json.dumps(event, ensure_ascii=False),

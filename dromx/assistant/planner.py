@@ -235,10 +235,40 @@ class AssistantPlanner:
                 logger.info("Calling tool: %s with args: %s", tool_name, tool_args)
                 yield {"type": "tool_start", "tool": tool_name, "args": tool_args}
 
-                # cancel_event 透传给支持它的工具（如 run_deep_analysis）
-                result = registry.dispatch(
-                    tool_name, tool_args, llm=self.llm, cancel_event=cancel_event,
-                )
+                # dispatch 是阻塞调用；深研工具经 on_progress 回调上报 section 进度（P-C）。
+                # 生成器不能从回调里 yield，故在工作线程跑 dispatch，回调把进度事件塞进队列，
+                # 主线程边等结果边 drain 队列 yield（deep_start/deep_section）。cancel_event 照旧透传。
+                import queue as _queue
+                import threading as _threading
+
+                _progress: "_queue.Queue" = _queue.Queue()
+                _box: dict = {}
+
+                def _on_progress(evt):
+                    _progress.put(evt)
+
+                def _worker():
+                    try:
+                        _box["result"] = registry.dispatch(
+                            tool_name, tool_args, llm=self.llm,
+                            cancel_event=cancel_event, on_progress=_on_progress,
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        _box["error"] = e
+                    finally:
+                        _progress.put(None)  # 结束哨兵
+
+                _t = _threading.Thread(target=_worker, daemon=True)
+                _t.start()
+                while True:
+                    evt = _progress.get()
+                    if evt is None:
+                        break
+                    yield evt  # deep_start / deep_section 透传给上层 SSE
+                _t.join()
+                if "error" in _box:
+                    raise _box["error"]
+                result = _box.get("result", "")
                 if _cancelled():
                     yield {"type": "cancelled", "text": "已停止"}
                     return

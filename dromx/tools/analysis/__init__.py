@@ -16,8 +16,13 @@ from dromx.tools.registry import registry, tool_error, tool_result
 logger = logging.getLogger(__name__)
 
 
-def _run_deep_analysis(args: dict, llm=None, config=None, cancel_event=None) -> str:
-    """运行深度分析流水线"""
+def _run_deep_analysis(args: dict, llm=None, config=None, cancel_event=None, on_progress=None) -> str:
+    """运行深度分析流水线
+
+    on_progress(evt): 可选回调，深研过程中逐 section 上报进度（平台 work 观测用，P-C）。
+    evt 形如 {"type": "deep_start", "nodes": [...]} / {"type": "deep_section", "key", "label", "markdown"}。
+    未传时行为不变（向后兼容直接调用 / CLI）。
+    """
     ticker = args.get("ticker", "")
     date = args.get("date") or datetime.now().strftime("%Y-%m-%d")
     analysts = args.get("analysts") or ["market", "social", "news", "fundamentals", "industry"]
@@ -28,10 +33,25 @@ def _run_deep_analysis(args: dict, llm=None, config=None, cancel_event=None) -> 
 
     try:
         from dromx.assistant.cancel import CancelledError
-        from webapp.backend.runner import run_analysis_once
+        from webapp.backend.runner import run_analysis_once, PIPELINE_NODES
 
         should_stop = cancel_event.is_set if cancel_event is not None else None
-        result, rating = run_analysis_once(ticker, date, analysts, depth, should_stop=should_stop)
+        # P-C：把 section 进度经 on_progress 上报（work 平台归一化成 deep_section 事件展示）。
+        # 进度上报失败绝不影响深研本身（try 包裹）。
+        on_section = None
+        if on_progress is not None:
+            try:
+                on_progress({"type": "deep_start", "ticker": ticker, "nodes": list(PIPELINE_NODES)})
+            except Exception:  # noqa: BLE001
+                logger.debug("on_progress deep_start failed", exc_info=True)
+
+            def on_section(key, label, markdown):  # noqa: ANN001
+                try:
+                    on_progress({"type": "deep_section", "key": key, "label": label, "markdown": markdown})
+                except Exception:  # noqa: BLE001
+                    logger.debug("on_progress deep_section failed", exc_info=True)
+
+        result, rating = run_analysis_once(ticker, date, analysts, depth, on_section=on_section, should_stop=should_stop)
         decision = result.get("final_trade_decision", "")
         return tool_result({
             "ticker": ticker,
