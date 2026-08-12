@@ -34,8 +34,12 @@ def _run_deep_analysis(args: dict, llm=None, config=None, cancel_event=None, on_
     try:
         from dromx.assistant.cancel import CancelledError
         from webapp.backend.runner import run_analysis_once, PIPELINE_NODES
+        from cli.stats_handler import StatsCallbackHandler
 
         should_stop = cancel_event.is_set if cancel_event is not None else None
+        # task#47：token/tool usage 采集器——run 结束经 on_progress emit deep_usage 事件，
+        # work 平台据此落【真实】B 账（estimated:false），替代 section 数估算。
+        stats_handler = StatsCallbackHandler()
         # P-C：把 section 进度经 on_progress 上报（work 平台归一化成 deep_section 事件展示）。
         # 进度上报失败绝不影响深研本身（try 包裹）。
         on_section = None
@@ -51,13 +55,23 @@ def _run_deep_analysis(args: dict, llm=None, config=None, cancel_event=None, on_
                 except Exception:  # noqa: BLE001
                     logger.debug("on_progress deep_section failed", exc_info=True)
 
-        result, rating = run_analysis_once(ticker, date, analysts, depth, on_section=on_section, should_stop=should_stop)
+        result, rating = run_analysis_once(
+            ticker, date, analysts, depth,
+            on_section=on_section, should_stop=should_stop, callbacks=[stats_handler],
+        )
+        # task#47：run 结束上报真实 usage（work 平台落真实 B 账）。上报失败不影响工具结果。
+        if on_progress is not None:
+            try:
+                on_progress({"type": "deep_usage", "usage": stats_handler.get_stats()})
+            except Exception:  # noqa: BLE001
+                logger.debug("on_progress deep_usage failed", exc_info=True)
         decision = result.get("final_trade_decision", "")
         return tool_result({
             "ticker": ticker,
             "date": date,
             "rating": rating,
             "decision": decision,
+            "usage": stats_handler.get_stats(),
             "sections": {k: v for k, v in result.items() if isinstance(v, str)},
         })
     except CancelledError:

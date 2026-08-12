@@ -34,10 +34,12 @@ def test_deep_analysis_reports_progress_when_callback_given():
         out = _run_deep_analysis({"ticker": "NBIS", "date": "2026-08-12"}, on_progress=events.append)
 
     types = [e["type"] for e in events]
-    assert types == ["deep_start", "deep_section", "deep_section"], types
+    # task#47：末尾多一个 deep_usage（run 结束上报真实 token/tool usage）
+    assert types == ["deep_start", "deep_section", "deep_section", "deep_usage"], types
     assert events[0]["ticker"] == "NBIS"
     assert events[1]["key"] == "market_report" and events[1]["label"] == "Market"
     assert "行情" in events[1]["markdown"]
+    assert events[-1]["type"] == "deep_usage" and "usage" in events[-1]  # 真实 usage 上报
     # 工具正常返回结果（进度上报不影响主流程）
     payload = json.loads(out)
     assert payload.get("rating") == "Hold" or payload.get("data", {}).get("rating") == "Hold"

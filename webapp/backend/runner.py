@@ -165,6 +165,7 @@ def run_analysis_once(
     ticker: str, trade_date: str, analysts: list[str], depth: int,
     *, shares: float | None = None, cost_basis: float | None = None,
     holdings: list[str] | None = None, on_section=None, should_stop=None,
+    callbacks=None,
 ) -> tuple[dict, str | None]:
     """Run the full pipeline ONCE and return (final_state, rating).
 
@@ -174,6 +175,11 @@ def run_analysis_once(
     ``on_section(key, label, markdown)`` is called as each section lands (the
     live worker emits SSE; the backtest ignores it). Blocking; caller owns
     concurrency (the single-flight semaphore).
+
+    ``callbacks`` (optional) are LangChain callback handlers bound to the LLM
+    constructors (e.g. a StatsCallbackHandler for token/cost usage). Callers that
+    want usage pass one and read ``.get_stats()`` after — the assistant deep-analysis
+    tool uses this so the work platform can record real (non-estimated) pipeline cost.
 
     ``holdings`` is the user's OTHER positions declared for THIS analysis; it
     drives the pre-trade portfolio-context factor. We force cfg["holdings"] to
@@ -197,7 +203,7 @@ def run_analysis_once(
 
     analyst_keys = tuple(analysts) if analysts else (
         "market", "social", "news", "fundamentals", "industry")
-    graph = DromXGraph(selected_analysts=analyst_keys, config=cfg)
+    graph = DromXGraph(selected_analysts=analyst_keys, config=cfg, callbacks=callbacks)
 
     asset_type = "stock"
     company, td = ticker, trade_date
