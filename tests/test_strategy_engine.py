@@ -92,8 +92,11 @@ class TestUniverseSnapshot:
     def test_network_failure_degrades_to_empty(self):
         from dromx.dataflows import eastmoney_universe as eu
 
-        with mock.patch.object(eu._SESSION, "get", side_effect=Exception("boom")):
+        with mock.patch.object(eu._SESSION, "get", side_effect=Exception("boom")), \
+             mock.patch.object(eu, "_fetch_page_curl", return_value=None) as curl_fallback, \
+             mock.patch.object(eu.time, "sleep"):
             assert eu.fetch_universe_snapshot("hk") == []
+        curl_fallback.assert_called()
 
 
 # ---------------------------------------------------------------------------
