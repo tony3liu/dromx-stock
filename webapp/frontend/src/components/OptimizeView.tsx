@@ -179,7 +179,7 @@ export function OptimizeView() {
                       <Tooltip
                         cursor={{ strokeDasharray: "3 3", stroke: "var(--color-shell-line)" }}
                         contentStyle={{ background: "var(--color-surface-2)", border: "1px solid var(--color-shell-line)", borderRadius: 10, fontSize: 12 }}
-                        formatter={(v: number | string, name: string) => [`${v}%`, name === "波动率" ? "波动" : "收益"]}
+                        formatter={(value, name) => [value == null ? "—" : `${value}%`, name === "波动率" ? "波动" : "收益"]}
                       />
                       <Legend wrapperStyle={{ fontSize: 11, color: "var(--color-ink-soft)" }} />
                       <Scatter name="有效边界" data={report.frontier} fill={BRAND} />

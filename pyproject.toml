@@ -1,11 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "dromx-stock"
 version = "0.3.0"
-description = "DromX: Multi-Agents LLM Financial Trading Framework"
+description = "DromX Stock: an open-source AI investment research workspace"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -41,12 +43,12 @@ dev = [
     "pytest-subtests>=0.13",
 ]
 # Amazon Bedrock support (AWS SigV4 auth + boto3). Optional so the core install
-# stays lean: pip install "dromx[bedrock]".
+# stays lean: pip install ".[bedrock]".
 bedrock = [
     "langchain-aws>=1.5.0",
 ]
 # Web application layer (webapp/backend): FastAPI + SSE over the engine. Optional
-# so the core/CLI install stays lean: pip install "dromx[web]".
+# so the core/CLI install stays lean: pip install ".[web]".
 web = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
@@ -62,7 +64,7 @@ include = ["dromx*", "cli*"]
 
 [tool.setuptools.package-data]
 cli = ["static/*"]
-dromx = ["agents/utils/skills/builtin/**/*.md"]
+dromx = ["skills/builtin/**/*.md", "strategy/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

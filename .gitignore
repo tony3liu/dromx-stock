@@ -228,14 +228,19 @@ __marimo__/
 reports/
 webapp/frontend/scripts/
 webapp/frontend/shots/
-.gitignore
 docs/
 brand/logo-horizontal.svg
 brand/logo-icon.svg
-.gitignore
 webapp/frontend/vite.shots.config.ts
 .scripts/
 scripts/*
 
 # 子代理临时工作目录（pi-subagents 任务产物，勿提交）
 .pi-subagents/
+.DS_Store
+.DS_Store?
+.env.*
+!.env.example
+!.env.enterprise.example
+.dromx/
+.tradingagents/

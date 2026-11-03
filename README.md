@@ -1,149 +1,102 @@
 <div align="center">
-  <img src="webapp/frontend/src/assets/brand/logo-icon.png" alt="DromX" width="120" />
-  <h3>一个有灵魂的 AI 投研助手</h3>
+  <img src="webapp/frontend/src/assets/brand/logo-icon.png" alt="DromX" width="100" />
+  <h1>DromX Stock</h1>
+  <p><strong>你的开源 AI 投研工作台</strong></p>
+  <p>聊市场、研究个股、跟踪机会，把零散信息整理成有依据的判断。</p>
   <p>
-    问你想问的，而不是填它让你填的。<br/>
-    多智能体深度投研 · A股 / 港股 / 美股 · 国内网络全直连
+    <a href="#快速开始">快速开始</a> ·
+    <a href="https://github.com/tony3liu/dromx-stock/issues">反馈与建议</a> ·
+    <a href="CONTRIBUTING.md">参与贡献</a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="Apache 2.0 License" />
+    <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+" />
   </p>
 </div>
 
----
+## 从一个问题开始
 
-## 为什么做 DromX
+**DromX Stock 是一个可自行部署的 AI 投研助手。** 用自然语言提出问题，结合行情、新闻与基本面展开研究，再继续追问或查看完整报告。
 
-市面上的"AI 投研"大多是同一个配方：**固定工作流 + 多 agent 辩论 + 数据源堆叠**。
-这个配方在交易分析业务上其实是错的：
+你可以从这些问题开始：
 
-- **工作流是死的，问题是活的**。真实投研问题是随机的——"存储板块见底了吗？"
-  "见底了资金会轮动到哪？""我这笔操作对不对，怎么补救？"填代码点按钮的
-  流水线回答不了这些。
-- **多 agent 辩论制造分析歧义**。让 bullish 和 bearish agent 来回吵架，
-  看似"全面"，实则产出大量互相矛盾的中间观点，最后的结论是被辩论动态
-  （而非证据权重）塑造的——同一只股票跑两次，谁吵赢了结论就倒向谁。
-  交易要的是**可归因的判断**，不是热闹的讨论。
+- “最近半导体板块发生了什么？哪些变化值得关注？”
+- “帮我研究这只股票，看看机会和主要风险。”
+- “这次财报会改变之前的判断吗？”
+- “回看我的买卖操作，有哪些地方值得改进？”
 
-DromX 的做法是**分工取证 + 单点裁决**：
+适合希望建立日常研究习惯的个人投资者，也适合想搭建自己投研工具的开发者。支持 A 股、港股、美股等市场；不同市场的数据覆盖和可用性取决于所用数据源。
 
-```
-5 个分析师并行取证（各写各的证据，互不辩论）
-  → 信号聚合器做确定性加权（谁的历史胜率高谁权重大，算法说了算）
-  → 事件冲击 / 深度控制做结构化路由
-  → 研究经理 / 风险共识 / 组合经理单点裁决（每一步有明确输入输出和责任人）
-```
+## 你能用它做什么
 
-没有吵架环节，没有中间态歧义——每一步的结论都能追溯到是哪份证据、
-哪个角色、按什么权重得出的。
+| 场景 | DromX 提供的帮助 |
+| --- | --- |
+| 和 AI 聊市场 | 多轮追问，查看研究过程，随时停止任务 |
+| 深入研究个股 | 汇总行情、新闻、基本面等信息，整理机会、风险与判断依据 |
+| 阅读研究报告 | 查看不同情景、仓位参考和可能推翻结论的条件，导出 PDF |
+| 跟踪市场 | 查看 K 线与分时行情，管理自选股 |
+| 探索投资机会 | 用自然语言描述选股条件，查看结果并继续调整 |
+| 复盘与组合研究 | 探索策略回测、持仓分析、风险评估与组合优化 |
 
-在此之上，架构是 **「投研助手 + 工具箱」**：一个理解你问题、自己规划工具的
-agent，配深度分析、板块数据、持仓复盘、财经日历、联网核实这一整箱工具。
-你随便问，它自己想办法回答。
+选股、监控、回测和组合工具仍在持续迭代，功能与结果请结合实际数据核对。
 
-## 长什么样
+## 界面预览
 
 <div align="center">
-  <img src="assets/screenshots/assistant.png" alt="投研助手：多轮对话 + 工具调用可见" width="860" />
-  <p><i>投研助手：随便问，工具调用过程可见，随时可停</i></p>
+  <img src="assets/screenshots/assistant.png" alt="DromX 投研助手：对话与研究过程" width="900" />
+  <p><em>从问题出发，在对话中持续研究。</em></p>
+  <img src="assets/screenshots/market.png" alt="DromX 大盘工作台：行情图表与自选股" width="900" />
+  <p><em>把行情和自选放在同一个工作台。</em></p>
 </div>
 
-```
-你：存储板块见底了吗？
+## 自己掌握工具和模型
 
-助手：🔧 查询板块行情  🔧 查询板块新闻  🔧 计算技术指标
+- **本地部署**：在自己的电脑上运行，保存配置与研究记录。
+- **自选模型**：支持 DeepSeek、OpenAI、Anthropic、Gemini、Kimi 等，也可连接 Ollama 或兼容接口。
+- **按需配置**：在页面选择模型、填写密钥，无需先修改代码。
+- **自由扩展**：源码开放，欢迎增加数据源、改进研究体验或分享新的使用方法。
 
-     存储板块分析报告（近 60 日）
-     ├─ 板块平均 +8.0%，今日单日 -10.02%（8 只成分股全线下跌）
-     ├─ 涨跌宽度 0%（极端弱势）
-     ├─ 关键判断：尚未确认见底，但已进入恐慌赶底阶段
-     └─ 建议：等待右侧信号（缩量企稳 + 宽度回升至 30%），现在抄底如同接飞刀
-
-你：那资金会轮动到哪里？   ← 多轮对话，上下文不断片
-
-你：我 1680 卖的 600519，卖飞了吗？
-助手：🔧 复盘我的操作  →  卖出至今 +3.2%，期间最大浮盈 +8.7%……
-```
-
-<div align="center">
-  <img src="assets/screenshots/market.png" alt="大盘工作台：日K/分时 + 自选" width="860" />
-  <p><i>大盘工作台：日 K / 当日分时，A股港股国内直连实时刷新</i></p>
-</div>
-
-**需要对单只股票下重注时，发起 19 节点深度投研：**
-
-```
-输入 000660.KS → 19 个 AI 角色并行/接力工作 8-15 分钟
-→ 评级 + 概率情景（牛/基准/熊）+ Kelly 仓位建议 + 证伪条件
-→ 「什么情况下我是错的」白纸黑字写进报告
-```
-
-## 核心能力
-
-**🧠 投研助手（对话式）**
-- 多轮对话 + 短期记忆，追问不断片；页面刷新也不丢
-- LLM 意图识别：板块/资金/个股/复盘/回测，自动规划工具链
-- 真流式输出，工具调用可见；随时一键停止（深度分析按节点中止，不烧钱）
-- 不凭记忆瞎说：涉及代码、上市地、最新事件，先联网核实再回答
-
-**🔬 深度分析（19 节点多智能体）**
-- 5 分析师并行取证（技术/情绪/新闻/基本面/产业）→ 信号确定性加权 → 单点裁决，**不搞多 agent 辩论**，结论可归因、可复现
-- Orchestrator 按标的和行情状态动态规划，不是固定模板
-- 21 个方法论 skill（均线猎手、机构资金流、半导体周期、财报偏差……）按需自动挂载
-- 事件触发 Re-Analysis：突发消息改变前提时，相关分析师自动重审结论
-- 产出带概率、Kelly 仓位、证伪条件的结构化决策，可导出 PDF
-
-**📈 大盘工作台**
-- 日 K / 当日分时自由切换，MA 叠加，自选 + 搜索 + 10s/30s/1min 刷新
-- A股走通达信 TCP 直连、港股走腾讯，国内网络零配置实时看
-
-**🌐 数据与模型**
-- 金十 7x24 快讯 + 财经日历（非农/CPI/央行决议）+ 黄金原油外汇全球指数行情
-- 东方财富 / 新浪 / FRED / Polymarket / StockTwits / Reddit / serper 搜索
-- 每个数据源都有降级链 + 熔断：一路挂了自动切备用，不卡死
-- LLM 随便换：DeepSeek / OpenAI / Anthropic / Gemini / Kimi / 通义 / 智谱 / Ollama 本地
+模型 API 可能产生费用；行情、新闻和联网查询依赖第三方服务及网络。使用外部模型时，相关问题和研究内容会发送给所配置的服务商。
 
 ## 快速开始
 
-```bash
-# 后端（Python 3.10+）
-pip install -r requirements.txt
-uvicorn webapp.backend.main:app --port 8077 --reload \
-  --reload-dir dromx --reload-dir webapp/backend --reload-dir cli
+准备 **Python 3.10+**、**Node.js 22.12+** 和 Git。以下命令适用于 macOS / Linux；Windows 虚拟环境激活命令见[运行说明](webapp/README.md)。
 
-# 前端（另开终端）
-cd webapp/frontend && npm install && npm run dev
-```
-
-打开 http://localhost:5173 → **应用配置** 页填入任意一家模型密钥（推荐 DeepSeek，便宜好用）
-→ 去「投研助手」问一句："存储板块见底了吗？"
-
-> 配置不用碰 `.env`：页面填的密钥优先级更高，`.env` 只是保底。
-> 涨跌配色支持一键切换（红涨绿跌 / 绿涨红跌），国内外习惯都照顾。
-
-## 实验功能（可能大改）
-
-⚠️ 选股、监控中心、多标的对比、绩效归因、跨品种对冲、策略回测——
-能用，但接口和交互在快速迭代中，别依赖它们的稳定性。
-
-## 架构（简版）
-
-```
-React 前端 ──SSE──> FastAPI 后端 ──> dromx 核心包
-                                        ├─ assistant/  投研助手（意图识别 + ReAct + 记忆 + 取消）
-                                        ├─ agents/     19 节点多智能体角色
-                                        ├─ graph/      LangGraph 流水线（并行优化）
-                                        ├─ tools/      统一工具注册表（板块/数据/分析/联网）
-                                        ├─ skills/     21 个可插拔方法论
-                                        └─ dataflows/  数据源路由（降级链 + 熔断）
-```
-
-CLI 党也可以直接 `python main.py` 跑终端版。
-
-## 开发
+**1. 下载项目并启动后端**
 
 ```bash
-python -m pytest tests/ -q          # 690+ 测试
-cd webapp/frontend && npm run build # 前端构建
+git clone https://github.com/tony3liu/dromx-stock.git
+cd dromx-stock
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[web]"
+python -m uvicorn webapp.backend.main:app --host 127.0.0.1 --port 8077
 ```
 
-## License
+**2. 另开一个终端，启动界面**
 
-[MIT](LICENSE)
+```bash
+cd dromx-stock/webapp/frontend
+npm ci
+npm run dev
+```
+
+**3. 开始使用**
+
+打开 [http://localhost:5173](http://localhost:5173)，进入「应用配置」，选择模型提供商，填写对应密钥与模型名称并保存。随后到「投研助手」提出第一个问题。
+
+例如使用 DeepSeek 时，可选择 `deepseek`，填写密钥，并将快速模型设为 `deepseek-chat`、深度模型设为 `deepseek-reasoner`。其他提供商请使用其当前可用的模型名称。
+
+更多运行选项与常见问题见[运行说明](webapp/README.md)。终端用户也可以在激活虚拟环境后运行 `python main.py`。
+
+## 一起完善 DromX
+
+欢迎通过 [Issues](https://github.com/tony3liu/dromx-stock/issues) 分享需求、问题与使用体验，也欢迎提交 Pull Request。贡献方式和开发验证命令见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 许可与致谢
+
+项目采用 [Apache License 2.0](LICENSE)，欢迎使用、修改与分发，请保留许可和相关署名。
+
+感谢 [TradingAgents](https://github.com/TauricResearch/TradingAgents) 提供的基础工作，以及开源社区的模型接入、行情数据与图表工具。
+
+**投资提示**：DromX 用于信息整理与研究辅助，不构成投资建议。AI 输出和第三方数据可能存在错误、延迟或缺失，投资决策与风险由使用者自行判断和承担。
